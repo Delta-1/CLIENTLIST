@@ -24,6 +24,8 @@
     </script>
     <!-- Phosphor Icons for great visuals -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- D3.js Library for Obsidian-style Visual Directory Graph -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         /* Custom scrollbar styled with Tailwind colors */
         ::-webkit-scrollbar {
@@ -45,12 +47,23 @@
         .theme-transition {
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
+        /* Grid background for the Obsidian Graph */
+        .obsidian-grid {
+            background-color: #0b0f19;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .obsidian-grid-light {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans theme-transition min-h-screen flex flex-col">
 
     <!-- Login Screen Container (Visible when not authenticated) -->
-    <div id="login-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md transition-opacity duration-300">
+    <div id="login-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md transition-opacity duration-300">
         <div class="w-full max-w-md p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl mx-4">
             
             <!-- Login Role Selection Tabs -->
@@ -59,7 +72,7 @@
                     Acesso ADM (Geral)
                 </button>
                 <button onclick="switchLoginTab('accounting')" id="tab-login-accounting" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all">
-                    Acesso Contabilidade
+                    Portal Contabilidades
                 </button>
             </div>
 
@@ -100,11 +113,11 @@
                         <i class="ph ph-buildings text-2xl"></i>
                     </div>
                     <h2 class="text-xl font-bold tracking-tight">Portal das Contabilidades</h2>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Visualize seus clientes e acesse os diretórios do Google Drive</p>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Acesso seguro a arquivos e pastas do Drive por escritório</p>
                 </div>
 
                 <p class="text-xs text-slate-400 text-center leading-relaxed mb-4">
-                    Nesta área você poderá acessar a lista de escritórios contábeis. Para abrir as informações de um escritório, será necessária a senha individual correspondente.
+                    Nesta área você poderá acessar a lista de escritórios contábeis cadastrados e consultar pastas organizadas por Ano/Mês no formato de Grafo Obsidian.
                 </p>
 
                 <button onclick="handleAccountingLoginSubmit()" class="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-purple-600/15 flex items-center justify-center gap-2">
@@ -139,7 +152,7 @@
 
                 <!-- Header Quick Actions -->
                 <div class="flex items-center space-x-2 sm:space-x-3">
-                    <!-- Sync Badge (Hidden on mobile and only for ADM) -->
+                    <!-- Sync Badge -->
                     <div id="sync-indicator" class="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[11px] font-semibold">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                         <span id="sync-status-text">Memória Local (Offline)</span>
@@ -167,7 +180,7 @@
         <!-- Main Workspace Container -->
         <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
             
-            <!-- KPIs Stat Cards Section -->
+            <!-- KPIs Stat Cards Section (Hidden for normal accounting portal) -->
             <section id="kpi-section" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <!-- Stats: Total Active MRR -->
                 <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between transition-all">
@@ -354,13 +367,18 @@
                                 <i class="ph ph-buildings text-lg"></i> Escritórios Contábeis
                             </h3>
                             <!-- Admin management action button -->
-                            <button id="admin-manage-acc-btn" onclick="openModal('manageAccountingModal')" class="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold flex items-center gap-1">
+                            <button id="admin-manage-acc-btn" onclick="openModal('manageAccountingModal')" class="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold flex items-center gap-1">
                                 <i class="ph ph-key"></i> Senhas
                             </button>
                         </div>
-                        <p class="text-[11px] text-slate-400 mb-4">Selecione uma contabilidade para visualizar a lista dedicada de clientes e suas respectivas pastas de organização.</p>
                         
-                        <div id="accounting-list-container" class="space-y-2">
+                        <!-- Search for Accounting Offices -->
+                        <div class="relative mb-4">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="accounting-search-input" oninput="renderAccountingTab()" placeholder="Filtrar escritórios..." class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-purple-500 outline-none transition-colors">
+                        </div>
+
+                        <div id="accounting-list-container" class="space-y-2 max-h-[400px] overflow-y-auto">
                             <!-- Populated Dynamically by Javascript -->
                         </div>
                     </div>
@@ -370,7 +388,7 @@
                         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
                             <div>
                                 <h3 id="selected-accounting-title" class="text-base font-bold text-slate-900 dark:text-slate-100">Selecione uma contabilidade</h3>
-                                <p id="selected-accounting-count" class="text-[11px] text-slate-500 dark:text-slate-400">Nenhum escritório ativo selecionado</p>
+                                <p id="selected-accounting-count" class="text-[11px] text-slate-500 dark:text-slate-400">Insira a senha do escritório para ver os dados</p>
                             </div>
                             <span class="p-2 bg-purple-500/10 text-purple-500 rounded-xl"><i class="ph ph-folder-open text-xl"></i></span>
                         </div>
@@ -382,13 +400,13 @@
                                     <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80">
                                         <th class="pb-3 pr-2">Cliente</th>
                                         <th class="pb-3 pr-2">Sistema</th>
-                                        <th class="pb-3 pr-2">Pasta / Organização</th>
-                                        <th class="pb-3 text-right">Caminho</th>
+                                        <th class="pb-3 pr-2">Visualizar Arquivos</th>
+                                        <th class="pb-3 text-right">Ação</th>
                                     </tr>
                                 </thead>
                                 <tbody id="accounting-clients-container" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
                                     <tr>
-                                        <td colspan="4" class="py-8 text-center text-slate-400 dark:text-slate-600">Escolha um escritório contábil na barra lateral para carregar as pastas organizadoras.</td>
+                                        <td colspan="4" class="py-8 text-center text-slate-400 dark:text-slate-600">Escolha um escritório contábil na barra lateral e informe a senha para visualizar os clientes e pastas virtuais.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -468,101 +486,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- STEP BY STEP GUIDELINE -->
-                    <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <h4 class="text-sm font-bold mb-4 flex items-center gap-2">
-                            <i class="ph ph-shield-check text-emerald-500 text-lg"></i>
-                            Como configurar sua planilha em 2 minutos (Passo a Passo)
-                        </h4>
-                        <ol class="list-decimal list-inside space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
-                            <li>Abra a sua planilha no <strong>Google Sheets</strong> (Aba ativa com nome <code class="bg-slate-100 dark:bg-slate-950 px-1 py-0.5 rounded text-rose-500">CLIENTES</code>).</li>
-                            <li>No menu superior, clique em <strong>Extensões</strong> &gt; <strong>Apps Script</strong>.</li>
-                            <li>Apague todo o código padrão e cole o script abaixo.</li>
-                            <li>Clique em <strong>Implantar</strong> &gt; <strong>Nova implantação</strong>.</li>
-                            <li>Selecione <strong>App da Web</strong> em Configurações.</li>
-                            <li>Em <code class="bg-slate-100 dark:bg-slate-950 px-1 py-0.5 rounded text-rose-500">Quem tem acesso</code>, marque <strong>Qualquer pessoa</strong>.</li>
-                            <li>Conclua a implantação, autorize as permissões e cole o link acima!</li>
-                        </ol>
-
-                        <!-- CODE EMBED CONTAINER -->
-                        <div class="relative">
-                            <button onclick="copyAppsScript()" class="absolute top-3 right-3 p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-300 transition-colors" title="Copiar código">
-                                <i class="ph ph-copy text-lg"></i>
-                            </button>
-                            <pre class="bg-slate-100 dark:bg-slate-950 text-[10px] text-emerald-700 dark:text-emerald-400 p-4 rounded-xl overflow-x-auto border border-slate-200 dark:border-slate-800 font-mono leading-relaxed" id="code-box">
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("CLIENTES");
-  if(!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({status: "error", message: "Crie uma aba com o nome 'CLIENTES'"})).setMimeType(ContentService.MimeType.JSON);
-  }
-  var data = sheet.getDataRange().getValues();
-  var clients = [];
-  
-  for(var i = 1; i < data.length; i++) {
-    if(!data[i][0]) continue;
-    clients.push({
-      id: i,
-      cliente: data[i][0],
-      mensalidade: parseFloat(data[i][1]) || 0,
-      observacao: data[i][2] || "",
-      contato: data[i][3] || "",
-      cidade: data[i][4] || "",
-      situacao: data[i][5] || "ATIVO",
-      regime: data[i][6] || "",
-      emite: data[i][7] || "",
-      sistema: data[i][8] || "",
-      versao: data[i][9] || "",
-      cnpj: data[i][10] || "",
-      contabilidade: data[i][11] || "Não Atribuída",
-      pasta: data[i][12] || ""
-    });
-  }
-  return ContentService.createTextOutput(JSON.stringify(clients))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    var payload = JSON.parse(e.postData.contents);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("CLIENTES");
-    
-    if(payload.action === "syncAll") {
-      sheet.clearContents();
-      var headers = ["CLIENTES", "MENSALIDADE", "OBSERVAÇÃO", "CONTATO", "CIDADE", "SITUAÇÃO", "REGIME", "EMITE?", "SISTEMA", "VERSÃO", "CNPJ", "CONTABILIDADE", "PASTA"];
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      
-      var rows = payload.clients.map(function(c) {
-        return [
-          c.cliente,
-          c.mensalidade,
-          c.observacao || "",
-          c.contato || "",
-          c.cidade || "",
-          c.situacao || "ATIVO",
-          c.regime || "",
-          c.emite || "",
-          c.sistema || "",
-          c.versao || "",
-          c.cnpj || "",
-          c.contabilidade || "Não Atribuída",
-          c.pasta || ""
-        ];
-      });
-      
-      if(rows.length > 0) {
-        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
-      }
-      return ContentService.createTextOutput(JSON.stringify({status: "success"}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({status: "error", error: err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}</pre>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -604,6 +527,81 @@ function doPost(e) {
                                 <i class="ph ph-trash"></i>
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Custom Obsidian Vault Graph Visualizer -->
+    <div id="obsidianGraphModal" class="fixed inset-0 z-50 overflow-hidden hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onclick="closeModal('obsidianGraphModal')"></div>
+        <div class="relative w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-white flex flex-col z-50">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-purple-500/10 text-purple-400 rounded-xl">
+                        <i class="ph ph-graph text-2xl animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm" id="graph-modal-client-title">Diretório Visual Obsidian</h3>
+                        <p class="text-[10px] text-slate-400" id="graph-modal-client-subtitle">Fisica em tempo real: Arraste nós, clique para baixar arquivos</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('obsidianGraphModal')" class="p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Two-panel layout) -->
+            <div class="flex-grow flex flex-col md:flex-row overflow-hidden">
+                <!-- Left panel: D3 SVG Graph -->
+                <div class="flex-grow h-full relative" id="graph-svg-container">
+                    <!-- Obsidian Interactive Map SVG -->
+                    <svg id="obsidian-svg" class="w-full h-full cursor-grab active:cursor-grabbing"></svg>
+                    <!-- Floating Legend -->
+                    <div class="absolute bottom-4 left-4 bg-slate-950/85 backdrop-blur-sm p-3.5 rounded-xl border border-slate-800 text-[10px] space-y-2 pointer-events-none">
+                        <div class="font-bold text-slate-400 uppercase tracking-wider mb-1">Legenda do Grafo</div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/20"></span>
+                            <span class="font-semibold text-slate-300">Empresa</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/20"></span>
+                            <span class="font-semibold text-slate-300">Ano Fiscal</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-purple-500 shadow-lg shadow-purple-500/20"></span>
+                            <span class="font-semibold text-slate-300">Mês de Referência</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/20"></span>
+                            <span class="font-semibold text-slate-300">Documento / Upload</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right panel: Document details & list view -->
+                <div class="w-full md:w-80 border-t md:border-t-0 md:border-l border-slate-800 bg-slate-950/50 p-6 flex flex-col justify-between overflow-y-auto shrink-0">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                            <i class="ph ph-folder text-base"></i> Lista de Documentos
+                        </h4>
+                        <div id="graph-files-list" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Selected Document Download Hub -->
+                    <div id="graph-selected-file-hub" class="mt-6 pt-6 border-t border-slate-800 space-y-3 hidden">
+                        <div class="p-3 bg-cyan-950/20 border border-cyan-500/20 rounded-xl">
+                            <span class="text-[9px] uppercase font-bold text-cyan-400">Arquivo Selecionado</span>
+                            <p class="font-bold text-xs text-white truncate mt-1" id="selected-file-name">-</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5" id="selected-file-size">-</p>
+                        </div>
+                        <button onclick="simulateDownload()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/10">
+                            <i class="ph ph-download-simple text-base font-bold"></i> Baixar Documento
+                        </button>
                     </div>
                 </div>
             </div>
@@ -792,7 +790,7 @@ function doPost(e) {
     </div>
 
     <!-- MODAL: Accounting Password Modal -->
-    <div id="accountingPasswordModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4">
+    <div id="accountingPasswordModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4 animate-fade-in">
         <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onclick="closeModal('accountingPasswordModal')"></div>
         <div class="relative w-full max-w-sm rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
             <div class="flex items-center space-x-3 text-purple-500 mb-4">
@@ -895,7 +893,7 @@ function doPost(e) {
     </div>
 
     <script>
-        // Database structured exactly from real corporate "Visão geral de clientes"
+        // Database seeded directly from "Visão geral de clientes" corporate files
         const DEFAULT_CLIENTS = [
             { id: 1, cliente: "ABILIO (ABILIO RACOES E PETS )", mensalidade: 240.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "12.345.678/0001-90", contabilidade: "ES Santos Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_abilio_drive" },
             { id: 2, cliente: "ABSON(MERCANTIL POPULAR )", mensalidade: 135.00, observacao: "", contato: "55 68 9257-4330", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "23.456.789/0001-01", contabilidade: "Exata Contábil", pasta: "https://drive.google.com/drive/folders/mock_abson_drive" },
@@ -908,7 +906,7 @@ function doPost(e) {
             { id: 9, cliente: "ALINE (TOP CELL ACESSORIOS MATRIZ E FILIAL )", mensalidade: 320.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "90.123.456/0001-78", contabilidade: "ES Santos Contabilidade", pasta: "C:\\ClientesContabil\\TopCell" },
             { id: 10, cliente: "ANA (DETALHES )", mensalidade: 0.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "01.234.567/0001-89", contabilidade: "Outros", pasta: "C:\\Backup\\Detalhes" },
             { id: 11, cliente: "ANA PAULA (MIMOS DE MADAME )", mensalidade: 180.00, observacao: "PG OK", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "NAVI VENDAS", versao: "", cnpj: "12.304.567/0001-90", contabilidade: "Contabilidade Brasiléia", pasta: "C:\\Backup\\MimosMadame" },
-            { id: 12, cliente: "ANNE (ARROBA AGROPECUARI  MATRIZ)", mensalidade: 560.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 KIT PI 08/05", cnpj: "23.405.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_anne_drive" },
+            { id: 12, cliente: "ANNE (ARROBA AGROPECUARI MATRIZ)", mensalidade: 560.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 KIT PI 08/05", cnpj: "23.405.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_anne_drive" },
             { id: 13, cliente: "BRUNA (WG MOTO PEÇAS )", mensalidade: 350.00, observacao: "PG OK", contato: "55 68 9981-2540", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "34.506.789/0001-12", contabilidade: "Contabilidade Brasiléia", pasta: "C:\\Contas\\WGMoto" },
             { id: 14, cliente: "BRUNO (SANTA FE FILIAL E MATRIZ )", mensalidade: 1500.00, observacao: "PG OK", contato: "55 69 9319-3437", cidade: "BOCA DO ACRE/ AMAZONA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "45.607.890/0001-23", contabilidade: "Rio Branco Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_santa_fe" },
             { id: 15, cliente: "CARLINHOS (CR GAS MATRIZ E FILIAL )", mensalidade: 135.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "56.708.901/0001-34", contabilidade: "Contabilidade Epitaciolândia", pasta: "C:\\Clientes\\CRGas" },
@@ -918,7 +916,7 @@ function doPost(e) {
             { id: 19, cliente: "CHARLYS (JB FERNANDEZ )", mensalidade: 160.00, observacao: "", contato: "", cidade: "PERU", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "NAVI VENDAS", versao: "", cnpj: "90.132.345/0001-78", contabilidade: "Outros", pasta: "D:\\Internacional\\JBFernandez" },
             { id: 20, cliente: "CIRILO (CIRILO MOVEIS E COLCHOES )", mensalidade: 200.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "01.243.456/0001-89", contabilidade: "Contabilidade Epitaciolândia", pasta: "D:\\Local\\CiriloMoveis" },
             { id: 21, cliente: "E .S SANTOS  CONTABLIDADE", mensalidade: 0.00, observacao: "", contato: "", cidade: "", situacao: "INATIVO", regime: "", emite: "", sistema: "AVANTE WEB", versao: "", cnpj: "12.354.567/0001-90", contabilidade: "ES Santos Contabilidade", pasta: "D:\\Inativos\\ESSantos" },
-            { id: 22, cliente: "LIGIA (PETROPOLIS)", mensalidade: 2440.00, observacao: "PG OK", contato: "", city: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "23.465.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "D:\\Local\\Petropolis" },
+            { id: 22, cliente: "LIGIA (PETROPOLIS)", mensalidade: 2440.00, observacao: "PG OK", contato: "", cidade: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "23.465.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "D:\\Local\\Petropolis" },
             { id: 23, cliente: "LURDMILA (RP MIX )", mensalidade: 100.00, observacao: "OK PG", contato: "", cidade: "", situacao: "ATIVO", regime: "MEI", emite: "NÃO", sistema: "LINK PRO", versao: "", cnpj: "34.576.789/0001-12", contabilidade: "Exata Contábil", pasta: "C:\\Organizacao\\RPMix" },
             { id: 24, cliente: "MARCOS (RONDOFIL )", mensalidade: 0.00, observacao: "PG OK", contato: "", cidade: "", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.19 kit pi 30/05", cnpj: "45.687.890/0001-23", contabilidade: "ES Santos Contabilidade", pasta: "C:\\Organizacao\\Rondofil" },
             { id: 25, cliente: "VALDENORA (COMERCIAL GABRIEL )", mensalidade: 300.00, observacao: "", contato: "", cidade: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 kit pi REFORMA TRIBUTARIA", cnpj: "56.798.901/0001-34", contabilidade: "ES Santos Contabilidade", pasta: "C:\\Organizacao\\ComercialGabriel" }
@@ -934,18 +932,33 @@ function doPost(e) {
             { id: 6, name: "Outros", password: "outros123" }
         ];
 
+        // Seeding some initial files for Obsidian Graph Virtual Folder structures
+        const DEFAULT_VAULT_FILES = [
+            { id: "v1", clientId: 1, year: "2026", month: "06 - Junho", name: "DAS_Declaracao_Mensal.pdf", size: "142 KB" },
+            { id: "v2", clientId: 1, year: "2026", month: "06 - Junho", name: "PGDAS_Recibo_Pagamento.pdf", size: "98 KB" },
+            { id: "v3", clientId: 1, year: "2026", month: "05 - Maio", name: "Extrato_Simples_Nacional.pdf", size: "115 KB" },
+            { id: "v4", clientId: 1, year: "2025", month: "12 - Dezembro", name: "DEFIS_Declaracao_Anual.pdf", size: "1.2 MB" },
+            { id: "v5", clientId: 2, year: "2026", month: "06 - Junho", name: "DAS_Competencia_06.pdf", size: "139 KB" },
+            { id: "v6", clientId: 2, year: "2026", month: "06 - Junho", name: "Sintegra_Relatorio_Sistemas.xml", size: "890 KB" },
+            { id: "v7", clientId: 3, year: "2026", month: "06 - Junho", name: "DAS_Competencia_06.pdf", size: "145 KB" },
+            { id: "v8", clientId: 3, year: "2026", month: "05 - Maio", name: "DAS_Competencia_05.pdf", size: "141 KB" },
+            { id: "v9", clientId: 5, year: "2026", month: "06 - Junho", name: "Sped_Fiscal_ECD_Assinada.pdf", size: "3.4 MB" }
+        ];
+
         // App States
         let clients = [];
         let filteredClients = [];
         let accountingProfiles = [];
+        let vaultFiles = [];
         let selectedClientId = null;
         let isSheetsConnected = false;
         
         let currentRole = null; // 'admin' | 'accounting'
         let currentLoginTab = 'adm'; // 'adm' | 'accounting'
         let selectedAccounting = null;
-        let unlockedAccountings = []; // Saves accounting profiles unlocked in the current session
-        let accountingToUnlock = null; // Helper for password submission
+        let unlockedAccountings = []; // Stores accountings unlocked in the current session
+        let accountingToUnlock = null; // Helper for password prompt
+        let currentSelectedFile = null; // Helper for obsidian file downloader
 
         // Initialize App on Window Load
         window.onload = function() {
@@ -976,7 +989,7 @@ function doPost(e) {
             }
         }
 
-        // Configure visual layouts and restrictions based on ADM / Accounting role
+        // Configure layouts and restrictions based on ADM / Accounting role
         function configureWorkspaceByRole() {
             const roleBadge = document.getElementById('badge-user-role');
             const headerAddBtn = document.getElementById('header-add-client-btn');
@@ -1111,13 +1124,22 @@ function doPost(e) {
             const localData = localStorage.getItem('gestasheet_client_db');
             const localUrl = localStorage.getItem('gestasheet_api_url');
             const localProfiles = localStorage.getItem('gestasheet_accounting_profiles');
+            const localVault = localStorage.getItem('gestasheet_vault_files');
 
-            // Set dynamic selector options for accountings
+            // Load accountings
             if (localProfiles) {
                 accountingProfiles = JSON.parse(localProfiles);
             } else {
                 accountingProfiles = [...DEFAULT_ACCOUNTINGS];
                 localStorage.setItem('gestasheet_accounting_profiles', JSON.stringify(accountingProfiles));
+            }
+
+            // Load file vault database
+            if (localVault) {
+                vaultFiles = JSON.parse(localVault);
+            } else {
+                vaultFiles = [...DEFAULT_VAULT_FILES];
+                localStorage.setItem('gestasheet_vault_files', JSON.stringify(vaultFiles));
             }
 
             if (localUrl) {
@@ -1390,7 +1412,7 @@ function doPost(e) {
                             <button onclick="openDrawer(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 transition-colors" title="Ver Detalhes">
                                 <i class="ph ph-file-text text-lg"></i>
                             </button>
-                            <button onclick="openEditModal(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-blue-500 hover:text-blue-600 transition-colors" title="Editar">
+                            <button onclick="openEditModal(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-blue-400 hover:text-blue-300 transition-colors" title="Editar">
                                 <i class="ph ph-pencil-simple-line text-lg"></i>
                             </button>
                             <button onclick="triggerDelete(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-rose-500 hover:text-rose-600 transition-colors" title="Excluir">
@@ -1408,6 +1430,8 @@ function doPost(e) {
             const listContainer = document.getElementById('accounting-list-container');
             listContainer.innerHTML = '';
 
+            const searchFilter = document.getElementById('accounting-search-input').value.toLowerCase();
+
             // Group clients by accounting company
             const accountingGroups = {};
             clients.forEach(c => {
@@ -1419,10 +1443,15 @@ function doPost(e) {
             });
 
             // Populate profiles sidebar
-            const uniqueOffices = accountingProfiles.map(p => p.name).sort();
+            let uniqueOffices = accountingProfiles.map(p => p.name).sort();
+
+            // Apply search filter if present
+            if (searchFilter) {
+                uniqueOffices = uniqueOffices.filter(o => o.toLowerCase().includes(searchFilter));
+            }
 
             if (uniqueOffices.length === 0) {
-                listContainer.innerHTML = '<p class="text-xs text-slate-400">Nenhum escritório registrado.</p>';
+                listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Nenhum escritório encontrado.</p>';
                 return;
             }
 
@@ -1436,25 +1465,25 @@ function doPost(e) {
                 btn.onclick = () => selectAccountingOffice(office);
                 btn.className = `w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
                     isSelected 
-                        ? 'border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold' 
-                        : 'border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
+                        ? 'border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold shadow-md shadow-purple-500/5' 
+                        : 'border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`;
 
                 btn.innerHTML = `
                     <div class="flex items-center space-x-2.5">
                         <i class="ph ${isUnlocked ? 'ph-buildings text-purple-500' : 'ph-lock-key text-slate-400'} text-lg"></i>
-                        <div>
-                            <p class="text-xs truncate max-w-[150px] font-semibold">${office}</p>
-                            <p class="text-[10px] text-slate-400 font-normal">${clientList.length} Registros</p>
+                        <div class="truncate max-w-[140px]">
+                            <p class="text-xs font-semibold truncate">${office}</p>
+                            <p class="text-[10px] text-slate-400 font-normal">${clientList.length} Clientes</p>
                         </div>
                     </div>
-                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-850 font-extrabold">${activeCount} Ativos</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-extrabold shrink-0">${activeCount} Ativos</span>
                 `;
 
                 listContainer.appendChild(btn);
             });
 
-            // If an office is already selected and unlocked, refresh its clients grid
+            // If an office is selected, load the file directories (only if unlocked or admin)
             if (selectedAccounting) {
                 const isUnlocked = currentRole === 'admin' || unlockedAccountings.includes(selectedAccounting);
                 if (isUnlocked) {
@@ -1468,14 +1497,11 @@ function doPost(e) {
         // Selected Accounting dynamic change trigger with password wall
         function selectAccountingOffice(officeName) {
             selectedAccounting = officeName;
-            
-            // Check if profile is already unlocked or if user is ADM (no passwords required for ADM)
             const isUnlocked = currentRole === 'admin' || unlockedAccountings.includes(officeName);
 
             if (isUnlocked) {
                 renderAccountingTab();
             } else {
-                // Open password modal
                 accountingToUnlock = officeName;
                 document.getElementById('pwd-modal-acc-name').textContent = officeName;
                 document.getElementById('acc-password-input').value = '';
@@ -1493,7 +1519,7 @@ function doPost(e) {
             if (profile && profile.password === enteredPwd) {
                 unlockedAccountings.push(accountingToUnlock);
                 closeModal('accountingPasswordModal');
-                showToast("Escritório desbloqueado com sucesso!");
+                showToast(`Escritório ${accountingToUnlock} desbloqueado!`);
                 renderAccountingTab();
             } else {
                 document.getElementById('acc-pwd-error').classList.remove('hidden');
@@ -1503,16 +1529,16 @@ function doPost(e) {
 
         function renderAccountingClientsLockedState() {
             document.getElementById('selected-accounting-title').textContent = "Escritório Bloqueado";
-            document.getElementById('selected-accounting-count').textContent = "Insira a senha para carregar os clientes";
+            document.getElementById('selected-accounting-count').textContent = "Insira a senha cadastrada para visualizar";
             
             const clientsContainer = document.getElementById('accounting-clients-container');
             clientsContainer.innerHTML = `
                 <tr>
                     <td colspan="4" class="py-12 text-center text-slate-400 dark:text-slate-500">
                         <div class="flex flex-col items-center justify-center gap-2">
-                            <i class="ph ph-lock-key text-4xl text-purple-500/55"></i>
-                            <p class="text-xs font-bold">Conteúdo Protegido por Senha</p>
-                            <p class="text-[10px] text-slate-500">Clique na contabilidade correspondente e insira a credencial.</p>
+                            <i class="ph ph-lock-key text-4xl text-purple-500/55 animate-bounce"></i>
+                            <p class="text-xs font-bold text-slate-300">Conteúdo Protegido por Senha</p>
+                            <p class="text-[10px] text-slate-500">Insira as credenciais do escritório no balão de acesso à esquerda.</p>
                         </div>
                     </td>
                 </tr>
@@ -1526,7 +1552,7 @@ function doPost(e) {
             return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('drive.google.com');
         }
 
-        // Render clients subtable matching the chosen accounting firm
+        // Render clients subtable matching the unlocked accounting firm
         function renderAccountingClients(officeName, associatedClients) {
             document.getElementById('selected-accounting-title').textContent = officeName;
             document.getElementById('selected-accounting-count').textContent = `${associatedClients.length} Clientes vinculados a este escritório`;
@@ -1537,7 +1563,7 @@ function doPost(e) {
             if (associatedClients.length === 0) {
                 clientsContainer.innerHTML = `
                     <tr>
-                        <td colspan="4" class="py-8 text-center text-slate-400">Nenhum cliente atribuído a este escritório.</td>
+                        <td colspan="4" class="py-8 text-center text-slate-400">Nenhum cliente cadastrado neste escritório contábil.</td>
                     </tr>
                 `;
                 return;
@@ -1547,28 +1573,27 @@ function doPost(e) {
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-100 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-900/10 transition-colors";
                 
-                const isLink = isURL(c.pasta);
-                
                 tr.innerHTML = `
                     <td class="py-3.5 pr-2 font-bold text-slate-800 dark:text-slate-200">
                         ${c.cliente}
                     </td>
-                    <td class="py-3.5 pr-2 text-slate-500">
+                    <td class="py-3.5 pr-2 text-slate-500 font-medium">
                         ${c.sistema || '-'}
                     </td>
                     <td class="py-3.5 pr-2">
-                        <code class="bg-slate-100 dark:bg-slate-950 px-2 py-1 rounded text-[10px] text-emerald-600 dark:text-emerald-400 font-mono break-all inline-block select-all" title="Clique duas vezes para selecionar e copiar">
-                            ${c.pasta || 'Sem pasta configurada'}
-                        </code>
+                        <button onclick="openObsidianGraph(${c.id})" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 dark:text-purple-400 border border-purple-500/20 hover:border-purple-500/30 font-bold rounded-lg text-[10px] transition-all">
+                            <i class="ph ph-graph text-sm"></i>
+                            <span>Grafo Obsidian (Arquivos)</span>
+                        </button>
                     </td>
                     <td class="py-3.5 text-right">
-                        ${isLink ? `
-                            <button onclick="window.open('${c.pasta}', '_blank')" class="p-1.5 hover:bg-emerald-500/10 text-emerald-500 rounded-lg transition-colors flex items-center justify-center gap-1 inline-flex" title="Abrir no Google Drive">
+                        ${isURL(c.pasta) ? `
+                            <button onclick="window.open('${c.pasta}', '_blank')" class="p-1.5 hover:bg-emerald-500/10 text-emerald-500 rounded-lg transition-colors inline-flex items-center gap-1" title="Abrir Google Drive">
                                 <i class="ph ph-folder-open text-base font-bold"></i>
                                 <span class="text-[10px] font-bold hidden sm:inline">Drive</span>
                             </button>
                         ` : `
-                            <button onclick="copyToClipboard('${c.pasta ? c.pasta.replace(/\\/g, '\\\\') : ''}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-500 rounded-lg transition-colors inline-flex" title="Copiar Caminho de Rede Local">
+                            <button onclick="copyToClipboard('${c.pasta ? c.pasta.replace(/\\/g, '\\\\') : ''}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-500 rounded-lg transition-colors inline-flex" title="Copiar Diretório Local">
                                 <i class="ph ph-copy text-base"></i>
                             </button>
                         `}
@@ -1590,7 +1615,221 @@ function doPost(e) {
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            showToast("Caminho da pasta copiado!");
+            showToast("Diretório copiado!");
+        }
+
+        // ==========================================
+        // OBSIDIAN STYLE GRAPH VISUALIZATION ENGINE
+        // ==========================================
+        let simulation = null;
+
+        function openObsidianGraph(clientId) {
+            const client = clients.find(c => c.id === clientId);
+            if (!client) return;
+
+            document.getElementById('graph-modal-client-title').textContent = client.cliente;
+            document.getElementById('graph-modal-client-subtitle').textContent = `Pasta virtual do Drive: ${client.pasta || 'Local'}`;
+            document.getElementById('graph-selected-file-hub').classList.add('hidden');
+            currentSelectedFile = null;
+
+            openModal('obsidianGraphModal');
+
+            // Collect files matching this specific client
+            const clientFiles = vaultFiles.filter(f => f.clientId === clientId);
+            renderFileSidebarList(clientFiles);
+
+            // Construct node graph structure
+            // Nodes: Root (Client) -> Year -> Month -> File
+            const nodes = [{ id: "root", label: client.cliente, type: "client", size: 28 }];
+            const links = [];
+
+            const yearsSet = new Set();
+            const monthsMap = {}; // key: year-month, val: month label
+
+            clientFiles.forEach(file => {
+                yearsSet.add(file.year);
+                const monthKey = `${file.year}-${file.month}`;
+                monthsMap[monthKey] = { year: file.year, month: file.month };
+            });
+
+            // Add Year Nodes & link to Root
+            yearsSet.forEach(year => {
+                nodes.push({ id: year, label: year, type: "year", size: 20 });
+                links.push({ source: "root", target: year });
+            });
+
+            // Add Month Nodes & link to corresponding Years
+            Object.entries(monthsMap).forEach(([key, value]) => {
+                nodes.push({ id: key, label: value.month, type: "month", size: 16 });
+                links.push({ source: value.year, target: key });
+            });
+
+            // Add File Nodes & link to Month Node
+            clientFiles.forEach(file => {
+                const monthKey = `${file.year}-${file.month}`;
+                nodes.push({ id: file.id, label: file.name, type: "file", size: 12, file: file });
+                links.push({ source: monthKey, target: file.id });
+            });
+
+            // Render D3 SVG Force Graph
+            setTimeout(() => {
+                const container = document.getElementById('graph-svg-container');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+
+                // Configure Obsidian Grid style depending on light/dark theme
+                const isDark = document.documentElement.classList.contains('dark');
+                const svg = d3.select("#obsidian-svg")
+                    .attr("viewBox", `0 0 ${width} ${height}`)
+                    .attr("class", isDark ? "w-full h-full obsidian-grid" : "w-full h-full obsidian-grid-light");
+
+                // Clear previous contents
+                svg.selectAll("*").remove();
+
+                const g = svg.append("g");
+
+                // Add zoom and pan functionality
+                svg.call(d3.zoom().on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                }));
+
+                // Initialize Force simulation physics
+                if (simulation) simulation.stop();
+
+                simulation = d3.forceSimulation(nodes)
+                    .force("link", d3.forceLink(links).id(d => d.id).distance(80))
+                    .force("charge", d3.forceManyBody().strength(-200))
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .force("collide", d3.forceCollide().radius(d => d.size + 15));
+
+                // Draw connecting link lines
+                const link = g.append("g")
+                    .attr("stroke", isDark ? "#1e293b" : "#cbd5e1")
+                    .attr("stroke-opacity", 0.8)
+                    .attr("stroke-width", 1.5)
+                    .attr("stroke-dasharray", "4")
+                    .selectAll("line")
+                    .data(links)
+                    .join("line");
+
+                // Draw interactive node circles
+                const node = g.append("g")
+                    .selectAll("g")
+                    .data(nodes)
+                    .join("g")
+                    .attr("class", "cursor-pointer")
+                    .call(d3.drag()
+                        .on("start", dragstarted)
+                        .on("drag", dragged)
+                        .on("end", dragended))
+                    .on("click", (event, d) => {
+                        if (d.type === 'file') {
+                            selectFileForDownload(d.file);
+                        }
+                    });
+
+                // Style circles based on node types
+                node.append("circle")
+                    .attr("r", d => d.size)
+                    .attr("fill", d => {
+                        if (d.type === 'client') return "#10b981"; // Emerald
+                        if (d.type === 'year') return "#f59e0b"; // Amber
+                        if (d.type === 'month') return "#a855f7"; // Purple
+                        return "#22d3ee"; // Cyan File
+                    })
+                    .attr("stroke", isDark ? "#0f172a" : "#fff")
+                    .attr("stroke-width", 2)
+                    .attr("filter", d => d.type === 'client' ? "drop-shadow(0 0 8px rgba(16,185,129,0.4))" : "");
+
+                // Add text labels below nodes
+                node.append("text")
+                    .text(d => d.label)
+                    .attr("y", d => d.size + 14)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", isDark ? "#94a3b8" : "#475569")
+                    .attr("font-size", d => d.type === 'client' ? "10px" : "9px")
+                    .attr("font-weight", d => d.type === 'client' || d.type === 'year' ? "bold" : "normal");
+
+                simulation.on("tick", () => {
+                    link
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+
+                    node.attr("transform", d => `translate(${d.x},${d.y})`);
+                });
+
+                function dragstarted(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+
+                function dragged(event, d) {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                }
+
+                function dragended(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+
+            }, 150);
+        }
+
+        // Populates the list panel on the right of the graph
+        function renderFileSidebarList(files) {
+            const container = document.getElementById('graph-files-list');
+            container.innerHTML = '';
+
+            if (files.length === 0) {
+                container.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-6">Nenhum documento anexado ainda.</p>';
+                return;
+            }
+
+            // Sort files by year and month
+            files.sort((a,b) => b.year.localeCompare(a.year) || b.month.localeCompare(a.month));
+
+            files.forEach(f => {
+                const item = document.createElement('div');
+                item.onclick = () => selectFileForDownload(f);
+                item.className = "p-3 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-slate-700 cursor-pointer transition-all flex items-center justify-between";
+                
+                item.innerHTML = `
+                    <div class="truncate pr-2">
+                        <p class="font-bold text-[11px] truncate text-slate-200">${f.name}</p>
+                        <p class="text-[9px] text-purple-400 mt-0.5">${f.year} - ${f.month}</p>
+                    </div>
+                    <span class="text-[9px] font-mono text-slate-500 shrink-0">${f.size}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Handle clicking node or list item to prepare download
+        function selectFileForDownload(file) {
+            currentSelectedFile = file;
+            document.getElementById('graph-selected-file-hub').classList.remove('hidden');
+            document.getElementById('selected-file-name').textContent = file.name;
+            document.getElementById('selected-file-name').title = file.name;
+            document.getElementById('selected-file-size').textContent = `Tamanho: ${file.size} | Competência: ${file.month}`;
+            showToast(`Documento selecionado: ${file.name}`, "info");
+        }
+
+        // Simulate secure file pull/download
+        function simulateDownload() {
+            if (!currentSelectedFile) return;
+
+            showToast(`Iniciando download de ${currentSelectedFile.name}...`);
+            setTimeout(() => {
+                const link = document.createElement("a");
+                link.href = "#";
+                link.setAttribute("download", currentSelectedFile.name);
+                showToast("Arquivo baixado com sucesso!", "success");
+            }, 1000);
         }
 
         // Render Analytics Visual bars
@@ -1673,6 +1912,10 @@ function doPost(e) {
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
             document.getElementById(id).classList.remove('flex');
+            // Clean D3 simulation if applicable
+            if (id === 'obsidianGraphModal' && simulation) {
+                simulation.stop();
+            }
         }
 
         // Register new accounting company from Admin Management Modal
@@ -1781,14 +2024,14 @@ function doPost(e) {
             document.getElementById('edit-cnpj').value = client.cnpj || '';
             document.getElementById('edit-contabilidade').value = client.contabilidade || 'ES Santos Contabilidade';
             document.getElementById('edit-pasta').value = client.pasta || '';
-            document.getElementById('edit-cidade').value = client.cidade;
-            document.getElementById('edit-contato').value = client.contato;
-            document.getElementById('edit-sistema').value = client.sistema;
+            document.getElementById('edit-cidade').value = client.cidade || '';
+            document.getElementById('edit-contato').value = client.contato || '';
+            document.getElementById('edit-sistema').value = client.sistema || '';
             document.getElementById('edit-situacao').value = client.situacao;
             document.getElementById('edit-regime').value = client.regime;
             document.getElementById('edit-emite').value = client.emite;
-            document.getElementById('edit-versao').value = client.versao;
-            document.getElementById('edit-observacao').value = client.observacao;
+            document.getElementById('edit-versao').value = client.versao || '';
+            document.getElementById('edit-observacao').value = client.observacao || '';
 
             openModal('editClientModal');
         }
@@ -1855,8 +2098,10 @@ function doPost(e) {
 
             const box = document.getElementById('drawer-content-box');
             const isInactive = client.situacao === 'INATIVO';
-
             const isLink = isURL(client.pasta);
+
+            // Fetch matching uploads for drawer view
+            const clientFiles = vaultFiles.filter(f => f.clientId === id);
 
             box.innerHTML = `
                 <!-- Profile Header -->
@@ -1920,6 +2165,54 @@ function doPost(e) {
                     </div>
                 </div>
 
+                <!-- Uploads panel in Detail Drawer (Only accessible to ADM) -->
+                <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/45 dark:bg-slate-950/40 space-y-3">
+                    <h5 class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <i class="ph ph-upload-simple"></i> Enviar Novo Documento (Drive Virtual)
+                    </h5>
+                    <form onsubmit="handleVirtualUpload(event, ${client.id})" class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="up-year" required class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 outline-none">
+                                <option value="2026">2026</option>
+                                <option value="2025">2025</option>
+                            </select>
+                            <select id="up-month" required class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 outline-none">
+                                <option value="06 - Junho">Junho</option>
+                                <option value="05 - Maio">Maio</option>
+                                <option value="04 - Abril">Abril</option>
+                                <option value="03 - Março">Março</option>
+                                <option value="02 - Fevereiro">Fevereiro</option>
+                                <option value="01 - Janeiro">Janeiro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <input type="text" id="up-filename" required placeholder="Ex: DAS_Declaracao_Mensal.pdf" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
+                            <i class="ph ph-cloud-arrow-up"></i> Registrar Upload
+                        </button>
+                    </form>
+
+                    <!-- Client active virtual files list inside drawer -->
+                    <div class="mt-4">
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Arquivos Enviados (${clientFiles.length})</span>
+                        <div class="max-h-[140px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-lg">
+                            ${clientFiles.length === 0 ? '<p class="text-[10px] text-slate-500 p-3 text-center">Nenhum arquivo enviado.</p>' : ''}
+                            ${clientFiles.map(f => `
+                                <div class="p-2.5 flex items-center justify-between text-[11px] font-medium bg-white dark:bg-slate-900">
+                                    <div class="truncate pr-2">
+                                        <p class="font-bold truncate">${f.name}</p>
+                                        <p class="text-[9px] text-slate-400">${f.year} - ${f.month}</p>
+                                    </div>
+                                    <button onclick="deleteVirtualFile('${f.id}', ${client.id})" class="p-1 text-rose-500 hover:bg-rose-500/10 rounded transition-colors shrink-0">
+                                        <i class="ph ph-trash text-base"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Cidade</span>
@@ -1951,6 +2244,40 @@ function doPost(e) {
 
         function closeDrawer() {
             document.getElementById('clientDetailDrawer').classList.add('hidden');
+        }
+
+        // Add file virtually under selected client Year/Month
+        function handleVirtualUpload(event, clientId) {
+            event.preventDefault();
+            const year = document.getElementById('up-year').value;
+            const month = document.getElementById('up-month').value;
+            const filename = document.getElementById('up-filename').value.trim();
+
+            if (!filename) return;
+
+            const newFile = {
+                id: "v-" + Date.now(),
+                clientId: clientId,
+                year: year,
+                month: month,
+                name: filename,
+                size: `${Math.floor(Math.random() * 800) + 50} KB`
+            };
+
+            vaultFiles.push(newFile);
+            localStorage.setItem('gestasheet_vault_files', JSON.stringify(vaultFiles));
+
+            document.getElementById('up-filename').value = '';
+            showToast("Documento enviado para o Drive virtual!");
+            openDrawer(clientId); // Refresh drawer views
+        }
+
+        // Delete File from Client Vault
+        function deleteVirtualFile(fileId, clientId) {
+            vaultFiles = vaultFiles.filter(f => f.id !== fileId);
+            localStorage.setItem('gestasheet_vault_files', JSON.stringify(vaultFiles));
+            showToast("Documento removido!", "danger");
+            openDrawer(clientId); // Refresh drawer views
         }
 
         // Google Sheets Integration Controllers
@@ -2059,18 +2386,6 @@ function doPost(e) {
                 indicator.className = "hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[11px] font-semibold";
                 dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
             }
-        }
-
-        // Local copy button script
-        function copyAppsScript() {
-            const pre = document.getElementById('code-box');
-            const textArea = document.createElement("textarea");
-            textArea.value = pre.innerText;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showToast("Código copiado para área de transferência!");
         }
 
         // CSV Export Tool
