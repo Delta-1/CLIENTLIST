@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestaSheet - Controle de Carteira de Clientes</title>
+    <title>GestaSheet - Controle Contábil de Clientes</title>
     <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,33 +52,67 @@
     <!-- Login Screen Container (Visible when not authenticated) -->
     <div id="login-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md transition-opacity duration-300">
         <div class="w-full max-w-md p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl mx-4">
-            <div class="text-center mb-6">
-                <div class="inline-flex p-3 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-2xl text-white shadow-lg shadow-emerald-500/20 mb-4">
-                    <i class="ph ph-lock-key text-3xl"></i>
-                </div>
-                <h2 class="text-2xl font-bold tracking-tight">Acesso Restrito</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Insira suas credenciais corporativas CPUSIS</p>
-            </div>
-
-            <!-- Login Custom Alert Container -->
-            <div id="login-error-alert" class="hidden mb-4 p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-500 text-xs font-semibold flex items-center gap-2">
-                <i class="ph ph-warning-circle text-lg"></i>
-                <span>Usuário ou senha incorretos!</span>
-            </div>
-
-            <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-xs">
-                <div>
-                    <label class="block text-slate-400 font-semibold mb-1">Identificação / Usuário</label>
-                    <input type="text" id="login-user" required placeholder="Digite o usuário" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-slate-400 font-semibold mb-1">Senha de Acesso</label>
-                    <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all">
-                </div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-emerald-600/15">
-                    Confirmar Login
+            
+            <!-- Login Role Selection Tabs -->
+            <div class="flex border-b border-slate-200 dark:border-slate-800 mb-6 text-xs font-bold">
+                <button onclick="switchLoginTab('adm')" id="tab-login-adm" class="flex-1 pb-3 text-center border-b-2 border-emerald-500 text-emerald-500 transition-all">
+                    Acesso ADM (Geral)
                 </button>
-            </form>
+                <button onclick="switchLoginTab('accounting')" id="tab-login-accounting" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all">
+                    Acesso Contabilidade
+                </button>
+            </div>
+
+            <!-- ADM Login Form -->
+            <div id="form-login-adm-wrapper" class="space-y-4">
+                <div class="text-center mb-4">
+                    <div class="inline-flex p-3 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-2xl text-white shadow-lg shadow-emerald-500/20 mb-3">
+                        <i class="ph ph-shield-check text-2xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold tracking-tight">Painel Administrativo</h2>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Gerenciamento geral da carteira de clientes CPUSIS</p>
+                </div>
+
+                <div id="login-error-alert" class="hidden mb-4 p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-500 text-xs font-semibold flex items-center gap-2">
+                    <i class="ph ph-warning-circle text-lg"></i>
+                    <span>Usuário ou senha incorretos!</span>
+                </div>
+
+                <form onsubmit="handleAdminLoginSubmit(event)" class="space-y-4 text-xs">
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Usuário ADM</label>
+                        <input type="text" id="login-user" required placeholder="Digite o usuário" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Senha de Acesso</label>
+                        <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-emerald-600/15">
+                        Confirmar Login ADM
+                    </button>
+                </form>
+            </div>
+
+            <!-- Accounting Quick Entry Portal -->
+            <div id="form-login-accounting-wrapper" class="hidden space-y-4">
+                <div class="text-center mb-6">
+                    <div class="inline-flex p-3 bg-gradient-to-tr from-purple-600 to-indigo-500 rounded-2xl text-white shadow-lg shadow-purple-500/20 mb-3">
+                        <i class="ph ph-buildings text-2xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold tracking-tight">Portal das Contabilidades</h2>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Visualize seus clientes e acesse os diretórios do Google Drive</p>
+                </div>
+
+                <p class="text-xs text-slate-400 text-center leading-relaxed mb-4">
+                    Nesta área você poderá acessar a lista de escritórios contábeis. Para abrir as informações de um escritório, será necessária a senha individual correspondente.
+                </p>
+
+                <button onclick="handleAccountingLoginSubmit()" class="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-purple-600/15 flex items-center justify-center gap-2">
+                    <i class="ph ph-sign-in"></i>
+                    <span>Entrar no Portal Contábil</span>
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -97,7 +131,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2">
-                            GestaSheet <span class="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20">CONTÁBIL</span>
+                            GestaSheet <span id="badge-user-role" class="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20 uppercase">CONTÁBIL</span>
                         </h1>
                         <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Controle Automático de Carteira & Contabilidades</p>
                     </div>
@@ -105,7 +139,7 @@
 
                 <!-- Header Quick Actions -->
                 <div class="flex items-center space-x-2 sm:space-x-3">
-                    <!-- Sync Badge (Hidden on mobile) -->
+                    <!-- Sync Badge (Hidden on mobile and only for ADM) -->
                     <div id="sync-indicator" class="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[11px] font-semibold">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                         <span id="sync-status-text">Memória Local (Offline)</span>
@@ -121,8 +155,8 @@
                         <i class="ph ph-sign-out text-lg"></i>
                     </button>
 
-                    <!-- New Client Action Button -->
-                    <button onclick="openModal('addClientModal')" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-2 px-3 sm:px-4 rounded-xl flex items-center space-x-2 shadow-lg shadow-emerald-600/20 text-xs transition-all transform active:scale-95">
+                    <!-- New Client Action Button (Only for Admin) -->
+                    <button id="header-add-client-btn" onclick="openModal('addClientModal')" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-2 px-3 sm:px-4 rounded-xl flex items-center space-x-2 shadow-lg shadow-emerald-600/20 text-xs transition-all transform active:scale-95">
                         <i class="ph ph-plus-circle text-lg"></i>
                         <span class="hidden sm:inline">Adicionar Cliente</span>
                     </button>
@@ -134,7 +168,7 @@
         <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
             
             <!-- KPIs Stat Cards Section -->
-            <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <section id="kpi-section" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <!-- Stats: Total Active MRR -->
                 <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between transition-all">
                     <div class="flex items-center justify-between mb-2">
@@ -188,31 +222,36 @@
 
             <!-- Navigation Menu Tabs -->
             <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-6">
-                <div class="flex p-1 rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 self-start w-full sm:w-auto overflow-x-auto">
-                    <button onclick="switchTab('overviewTab')" id="btn-overviewTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto bg-emerald-600 text-white shadow-sm">
+                <div id="tabs-navigation-container" class="flex p-1 rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 self-start w-full sm:w-auto overflow-x-auto">
+                    <!-- Tab Overview -->
+                    <button onclick="switchTab('overviewTab')" id="btn-overviewTab" class="tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto">
                         <i class="ph ph-squares-four text-base"></i>
                         <span>Visão Geral</span>
                     </button>
-                    <button onclick="switchTab('tableTab')" id="btn-tableTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <!-- Tab Complete Table -->
+                    <button onclick="switchTab('tableTab')" id="btn-tableTab" class="tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto">
                         <i class="ph ph-table text-base"></i>
                         <span>Planilha Completa</span>
                     </button>
-                    <button onclick="switchTab('accountingTab')" id="btn-accountingTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <!-- Tab Accounting Firms -->
+                    <button onclick="switchTab('accountingTab')" id="btn-accountingTab" class="tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto">
                         <i class="ph ph-buildings text-base"></i>
                         <span>Contabilidades</span>
                     </button>
-                    <button onclick="switchTab('analyticsTab')" id="btn-analyticsTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <!-- Tab Metrics -->
+                    <button onclick="switchTab('analyticsTab')" id="btn-analyticsTab" class="tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto">
                         <i class="ph ph-chart-line text-base"></i>
                         <span>Indicadores</span>
                     </button>
-                    <button onclick="switchTab('syncTab')" id="btn-syncTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <!-- Tab Google Sheets integration -->
+                    <button onclick="switchTab('syncTab')" id="btn-syncTab" class="tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto">
                         <i class="ph ph-google-chrome-logo text-base"></i>
                         <span>Conexão Sheets</span>
                     </button>
                 </div>
 
-                <!-- Universal Quick Actions -->
-                <div class="flex items-center gap-2">
+                <!-- Universal Quick Actions (Admin Only) -->
+                <div id="universal-header-actions" class="flex items-center gap-2">
                     <button onclick="exportToCSV()" class="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <i class="ph ph-download-simple text-base"></i>
                         <span>Exportar CSV</span>
@@ -224,7 +263,7 @@
                 </div>
             </div>
 
-            <!-- Filters Section (Only visible on Overview and Table views) -->
+            <!-- Filters Section (Only visible on Overview and Table views for ADM) -->
             <div id="universal-filters" class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mb-6 transition-all">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                     <!-- Search text -->
@@ -310,9 +349,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Accountings Sidebar list -->
                     <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm md:col-span-1">
-                        <h3 class="text-sm font-bold mb-4 flex items-center gap-2 text-purple-500">
-                            <i class="ph ph-buildings text-lg"></i> Escritórios Contábeis
-                        </h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold flex items-center gap-2 text-purple-500">
+                                <i class="ph ph-buildings text-lg"></i> Escritórios Contábeis
+                            </h3>
+                            <!-- Admin management action button -->
+                            <button id="admin-manage-acc-btn" onclick="openModal('manageAccountingModal')" class="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold flex items-center gap-1">
+                                <i class="ph ph-key"></i> Senhas
+                            </button>
+                        </div>
                         <p class="text-[11px] text-slate-400 mb-4">Selecione uma contabilidade para visualizar a lista dedicada de clientes e suas respectivas pastas de organização.</p>
                         
                         <div id="accounting-list-container" class="space-y-2">
@@ -338,7 +383,7 @@
                                         <th class="pb-3 pr-2">Cliente</th>
                                         <th class="pb-3 pr-2">Sistema</th>
                                         <th class="pb-3 pr-2">Pasta / Organização</th>
-                                        <th class="pb-3 text-right">Diretório</th>
+                                        <th class="pb-3 text-right">Caminho</th>
                                     </tr>
                                 </thead>
                                 <tbody id="accounting-clients-container" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
@@ -551,7 +596,7 @@ function doPost(e) {
                         </div>
 
                         <!-- Footer bottom buttons inside drawer -->
-                        <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3">
+                        <div id="drawer-footer" class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3">
                             <button id="drawer-btn-edit" class="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2">
                                 <i class="ph ph-pencil-simple-line"></i> Editar Cadastro
                             </button>
@@ -595,17 +640,12 @@ function doPost(e) {
                     <div>
                         <label class="block text-slate-400 font-semibold mb-1">Escritório Contábil / Contabilidade</label>
                         <select id="add-contabilidade" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
-                            <option value="ES Santos Contabilidade">ES Santos Contabilidade</option>
-                            <option value="Contabilidade Epitaciolândia">Contabilidade Epitaciolândia</option>
-                            <option value="Contabilidade Brasiléia">Contabilidade Brasiléia</option>
-                            <option value="Exata Contábil">Exata Contábil</option>
-                            <option value="Rio Branco Contabilidade">Rio Branco Contabilidade</option>
-                            <option value="Outros">Outras / Particular</option>
+                            <!-- Populated dynamically from accountingProfiles -->
                         </select>
                     </div>
                     <div>
-                        <label class="block text-slate-400 font-semibold mb-1">Caminho da Pasta / Diretório</label>
-                        <input type="text" id="add-pasta" placeholder="Ex: C:\Contabilidade\Clientes\Abilio" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                        <label class="block text-slate-400 font-semibold mb-1">Link ou Pasta / Diretório</label>
+                        <input type="text" id="add-pasta" placeholder="Ex: https://drive.google.com/..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
                     </div>
                     <div>
                         <label class="block text-slate-400 font-semibold mb-1">Cidade</label>
@@ -647,7 +687,7 @@ function doPost(e) {
                         <input type="text" id="add-versao" placeholder="Ex: 3.20 KIT PI" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
                     </div>
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="block text-slate-400 font-semibold mb-1">Observações Internas (Coluna 3)</label>
+                        <label class="block text-slate-400 font-semibold mb-1">Observações Internas</label>
                         <textarea id="add-observacao" rows="2" placeholder="Notas sobre parcelamentos ou particularidades..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"></textarea>
                     </div>
                 </div>
@@ -691,17 +731,12 @@ function doPost(e) {
                     <div>
                         <label class="block text-slate-400 font-semibold mb-1">Escritório Contábil / Contabilidade</label>
                         <select id="edit-contabilidade" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
-                            <option value="ES Santos Contabilidade">ES Santos Contabilidade</option>
-                            <option value="Contabilidade Epitaciolândia">Contabilidade Epitaciolândia</option>
-                            <option value="Contabilidade Brasiléia">Contabilidade Brasiléia</option>
-                            <option value="Exata Contábil">Exata Contábil</option>
-                            <option value="Rio Branco Contabilidade">Rio Branco Contabilidade</option>
-                            <option value="Outros">Outras / Particular</option>
+                            <!-- Populated dynamically from accountingProfiles -->
                         </select>
                     </div>
                     <div>
-                        <label class="block text-slate-400 font-semibold mb-1">Caminho da Pasta / Diretório</label>
-                        <input type="text" id="edit-pasta" placeholder="Ex: C:\Contabilidade\Clientes\Abilio" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                        <label class="block text-slate-400 font-semibold mb-1">Link ou Pasta / Diretório</label>
+                        <input type="text" id="edit-pasta" placeholder="Ex: https://drive.google.com/..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
                     </div>
                     <div>
                         <label class="block text-slate-400 font-semibold mb-1">Cidade</label>
@@ -743,7 +778,7 @@ function doPost(e) {
                         <input type="text" id="edit-versao" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
                     </div>
                     <div class="col-span-1 sm:col-span-2">
-                        <label class="block text-slate-400 font-semibold mb-1">Observações Internas (Coluna 3)</label>
+                        <label class="block text-slate-400 font-semibold mb-1">Observações Internas</label>
                         <textarea id="edit-observacao" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"></textarea>
                     </div>
                 </div>
@@ -753,6 +788,91 @@ function doPost(e) {
                     <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl">Salvar Alterações</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Accounting Password Modal -->
+    <div id="accountingPasswordModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onclick="closeModal('accountingPasswordModal')"></div>
+        <div class="relative w-full max-w-sm rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <div class="flex items-center space-x-3 text-purple-500 mb-4">
+                <i class="ph ph-lock text-3xl"></i>
+                <h3 class="font-bold text-sm">Escritório Protegido</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                Insira a senha de acesso para visualizar os clientes vinculados à <strong id="pwd-modal-acc-name" class="text-slate-800 dark:text-slate-200"></strong>:
+            </p>
+
+            <div id="acc-pwd-error" class="hidden mb-3 p-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-500 text-[11px] font-semibold flex items-center gap-1.5">
+                <i class="ph ph-warning-circle text-base"></i>
+                <span>Senha incorreta! Tente novamente.</span>
+            </div>
+
+            <form onsubmit="submitAccountingPassword(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="acc-password-input" required placeholder="Digite a senha do escritório" class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-purple-500 outline-none transition-all">
+                </div>
+                <div class="flex justify-end space-x-2 text-xs">
+                    <button type="button" onclick="closeModal('accountingPasswordModal')" class="px-4 py-2 rounded-xl font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
+                    <button type="submit" class="bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-bold py-2 px-4 rounded-xl">Desbloquear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Manage Accountings & Passwords (Admin Only) -->
+    <div id="manageAccountingModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('manageAccountingModal')"></div>
+        <div class="relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="ph ph-key text-purple-500"></i> Gerenciar Contabilidades & Senhas
+                </h3>
+                <button onclick="closeModal('manageAccountingModal')" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6 text-xs">
+                <!-- Create new Profile Section -->
+                <form onsubmit="submitNewAccounting(event)" class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/45 space-y-3">
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300">Registrar Novo Escritório</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-slate-400 font-semibold mb-1">Nome do Escritório</label>
+                            <input type="text" id="new-acc-name" required placeholder="Ex: Contabilidade Alfa" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 font-semibold mb-1">Senha de Acesso</label>
+                            <input type="text" id="new-acc-password" required placeholder="Ex: alfa321" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
+                        <i class="ph ph-plus"></i> Adicionar Escritório Contábil
+                    </button>
+                </form>
+
+                <!-- Active Profiles list -->
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <i class="ph ph-shield-check text-base"></i> Senhas Ativas
+                    </h4>
+                    <div class="max-h-[180px] overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800/80">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 dark:bg-slate-950 text-[10px] uppercase font-bold text-slate-400">
+                                <tr>
+                                    <th class="p-3">Escritório</th>
+                                    <th class="p-3">Senha Ativa</th>
+                                    <th class="p-3 text-right">Excluir</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manage-acc-tbody" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -777,20 +897,20 @@ function doPost(e) {
     <script>
         // Database structured exactly from real corporate "Visão geral de clientes"
         const DEFAULT_CLIENTS = [
-            { id: 1, cliente: "ABILIO (ABILIO RACOES E PETS )", mensalidade: 240.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "12.345.678/0001-90", contabilidade: "ES Santos Contabilidade", pasta: "C:\\GestaSheet\\Clientes\\AbilioRacoes" },
-            { id: 2, cliente: "ABSON(MERCANTIL POPULAR )", mensalidade: 135.00, observacao: "", contato: "55 68 9257-4330", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "23.456.789/0001-01", contabilidade: "Exata Contábil", pasta: "C:\\GestaSheet\\Clientes\\MercantilPopular" },
+            { id: 1, cliente: "ABILIO (ABILIO RACOES E PETS )", mensalidade: 240.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "12.345.678/0001-90", contabilidade: "ES Santos Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_abilio_drive" },
+            { id: 2, cliente: "ABSON(MERCANTIL POPULAR )", mensalidade: 135.00, observacao: "", contato: "55 68 9257-4330", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "23.456.789/0001-01", contabilidade: "Exata Contábil", pasta: "https://drive.google.com/drive/folders/mock_abson_drive" },
             { id: 3, cliente: "ADELMAR (PANIFICADORA FELIPE )", mensalidade: 160.00, observacao: "", contato: "55 68 9989-3582", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "34.567.890/0001-12", contabilidade: "ES Santos Contabilidade", pasta: "C:\\GestaSheet\\Clientes\\PanificadoraFelipe" },
             { id: 4, cliente: "ADRIANA (VIDRO INOX )", mensalidade: 145.00, observacao: "", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20", cnpj: "45.678.901/0001-23", contabilidade: "Contabilidade Brasiléia", pasta: "D:\\Servidor\\Documentos\\VidroInox" },
-            { id: 5, cliente: "AIRO (AP PAGLIARINE )", mensalidade: 290.00, observacao: "OBS ESSE MES 1200,00", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "GESTORES", versao: "", cnpj: "56.789.012/0001-34", contabilidade: "Rio Branco Contabilidade", pasta: "D:\\Servidor\\Documentos\\Pagliarine" },
+            { id: 5, cliente: "AIRO (AP PAGLIARINE )", mensalidade: 290.00, observacao: "OBS ESSE MES 1200,00", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "GESTORES", versao: "", cnpj: "56.789.012/0001-34", contabilidade: "Rio Branco Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_airo_pagliarine" },
             { id: 6, cliente: "AIRO (AGRO CHAMI MATRIZ )", mensalidade: 324.00, observacao: "PG OK", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "GESTORES", versao: "", cnpj: "67.890.123/0001-45", contabilidade: "Contabilidade Epitaciolândia", pasta: "D:\\Servidor\\Documentos\\AgroChami" },
             { id: 7, cliente: "ALEXSANDRO (RM FARMA MATRIZ )", mensalidade: 300.00, observacao: "", contato: "55 68 9989-5533", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "78.901.234/0001-56", contabilidade: "Contabilidade Brasiléia", pasta: "C:\\ClientesContabil\\RMFarma" },
-            { id: 8, cliente: "ALICIA (L A MOTO PEÇAS)", mensalidade: 135.00, observacao: "", contato: "55 68 9919-0945", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "89.012.345/0001-67", contabilidade: "Exata Contábil", pasta: "C:\\ClientesContabil\\LAMoto" },
+            { id: 8, cliente: "ALICIA (L A MOTO PEÇAS)", mensalidade: 135.00, observacao: "", contato: "55 68 9919-0945", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "89.012.345/0001-67", contabilidade: "Exata Contábil", pasta: "https://drive.google.com/drive/folders/mock_alicia_moto" },
             { id: 9, cliente: "ALINE (TOP CELL ACESSORIOS MATRIZ E FILIAL )", mensalidade: 320.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "90.123.456/0001-78", contabilidade: "ES Santos Contabilidade", pasta: "C:\\ClientesContabil\\TopCell" },
             { id: 10, cliente: "ANA (DETALHES )", mensalidade: 0.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "01.234.567/0001-89", contabilidade: "Outros", pasta: "C:\\Backup\\Detalhes" },
             { id: 11, cliente: "ANA PAULA (MIMOS DE MADAME )", mensalidade: 180.00, observacao: "PG OK", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "NAVI VENDAS", versao: "", cnpj: "12.304.567/0001-90", contabilidade: "Contabilidade Brasiléia", pasta: "C:\\Backup\\MimosMadame" },
-            { id: 12, cliente: "ANNE (ARROBA AGROPECUARI  MATRIZ)", mensalidade: 560.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 KIT PI 08/05", cnpj: "23.405.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "C:\\Contas\\ArrobaAgro" },
+            { id: 12, cliente: "ANNE (ARROBA AGROPECUARI  MATRIZ)", mensalidade: 560.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 KIT PI 08/05", cnpj: "23.405.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_anne_drive" },
             { id: 13, cliente: "BRUNA (WG MOTO PEÇAS )", mensalidade: 350.00, observacao: "PG OK", contato: "55 68 9981-2540", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "34.506.789/0001-12", contabilidade: "Contabilidade Brasiléia", pasta: "C:\\Contas\\WGMoto" },
-            { id: 14, cliente: "BRUNO (SANTA FE FILIAL E MATRIZ )", mensalidade: 1500.00, observacao: "PG OK", contato: "55 69 9319-3437", cidade: "BOCA DO ACRE/ AMAZONA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "45.607.890/0001-23", contabilidade: "Rio Branco Contabilidade", pasta: "C:\\Clientes\\SantaFe" },
+            { id: 14, cliente: "BRUNO (SANTA FE FILIAL E MATRIZ )", mensalidade: 1500.00, observacao: "PG OK", contato: "55 69 9319-3437", cidade: "BOCA DO ACRE/ AMAZONA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "45.607.890/0001-23", contabilidade: "Rio Branco Contabilidade", pasta: "https://drive.google.com/drive/folders/mock_santa_fe" },
             { id: 15, cliente: "CARLINHOS (CR GAS MATRIZ E FILIAL )", mensalidade: 135.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", cnpj: "56.708.901/0001-34", contabilidade: "Contabilidade Epitaciolândia", pasta: "C:\\Clientes\\CRGas" },
             { id: 16, cliente: "CASA DE CARNE CASTELO", mensalidade: 160.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "NÃO", sistema: "LINK PRO", versao: "", cnpj: "67.809.012/0001-45", contabilidade: "Exata Contábil", pasta: "C:\\Servidor\\Castelo" },
             { id: 17, cliente: "CELSO (STORE CELL)", mensalidade: 160.00, observacao: "", contato: "55 68 9936-3115", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", cnpj: "78.910.123/0001-56", contabilidade: "Contabilidade Epitaciolândia", pasta: "C:\\Servidor\\StoreCell" },
@@ -798,18 +918,34 @@ function doPost(e) {
             { id: 19, cliente: "CHARLYS (JB FERNANDEZ )", mensalidade: 160.00, observacao: "", contato: "", cidade: "PERU", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "NAVI VENDAS", versao: "", cnpj: "90.132.345/0001-78", contabilidade: "Outros", pasta: "D:\\Internacional\\JBFernandez" },
             { id: 20, cliente: "CIRILO (CIRILO MOVEIS E COLCHOES )", mensalidade: 200.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "01.243.456/0001-89", contabilidade: "Contabilidade Epitaciolândia", pasta: "D:\\Local\\CiriloMoveis" },
             { id: 21, cliente: "E .S SANTOS  CONTABLIDADE", mensalidade: 0.00, observacao: "", contato: "", cidade: "", situacao: "INATIVO", regime: "", emite: "", sistema: "AVANTE WEB", versao: "", cnpj: "12.354.567/0001-90", contabilidade: "ES Santos Contabilidade", pasta: "D:\\Inativos\\ESSantos" },
-            { id: 22, cliente: "LIGIA (PETROPOLIS)", mensalidade: 2440.00, observacao: "PG OK", contato: "", cidade: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "23.465.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "D:\\Local\\Petropolis" },
+            { id: 22, cliente: "LIGIA (PETROPOLIS)", mensalidade: 2440.00, observacao: "PG OK", contato: "", city: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", cnpj: "23.465.678/0001-01", contabilidade: "ES Santos Contabilidade", pasta: "D:\\Local\\Petropolis" },
             { id: 23, cliente: "LURDMILA (RP MIX )", mensalidade: 100.00, observacao: "OK PG", contato: "", cidade: "", situacao: "ATIVO", regime: "MEI", emite: "NÃO", sistema: "LINK PRO", versao: "", cnpj: "34.576.789/0001-12", contabilidade: "Exata Contábil", pasta: "C:\\Organizacao\\RPMix" },
             { id: 24, cliente: "MARCOS (RONDOFIL )", mensalidade: 0.00, observacao: "PG OK", contato: "", cidade: "", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.19 kit pi 30/05", cnpj: "45.687.890/0001-23", contabilidade: "ES Santos Contabilidade", pasta: "C:\\Organizacao\\Rondofil" },
             { id: 25, cliente: "VALDENORA (COMERCIAL GABRIEL )", mensalidade: 300.00, observacao: "", contato: "", cidade: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 kit pi REFORMA TRIBUTARIA", cnpj: "56.798.901/0001-34", contabilidade: "ES Santos Contabilidade", pasta: "C:\\Organizacao\\ComercialGabriel" }
         ];
 
+        // Default Accounting Offices Profiles loaded natively
+        const DEFAULT_ACCOUNTINGS = [
+            { id: 1, name: "ES Santos Contabilidade", password: "santos123" },
+            { id: 2, name: "Contabilidade Epitaciolândia", password: "epita123" },
+            { id: 3, name: "Contabilidade Brasiléia", password: "bras123" },
+            { id: 4, name: "Exata Contábil", password: "exata123" },
+            { id: 5, name: "Rio Branco Contabilidade", password: "rio123" },
+            { id: 6, name: "Outros", password: "outros123" }
+        ];
+
         // App States
         let clients = [];
         let filteredClients = [];
+        let accountingProfiles = [];
         let selectedClientId = null;
         let isSheetsConnected = false;
+        
+        let currentRole = null; // 'admin' | 'accounting'
+        let currentLoginTab = 'adm'; // 'adm' | 'accounting'
         let selectedAccounting = null;
+        let unlockedAccountings = []; // Saves accounting profiles unlocked in the current session
+        let accountingToUnlock = null; // Helper for password submission
 
         // Initialize App on Window Load
         window.onload = function() {
@@ -820,13 +956,18 @@ function doPost(e) {
         // Authentication Gate Control
         function checkSessionGate() {
             const isLogged = sessionStorage.getItem('gestasheet_logged') === 'true';
+            currentRole = sessionStorage.getItem('gestasheet_role');
+            
             const gate = document.getElementById('login-gate');
             const workspace = document.getElementById('app-workspace');
 
-            if (isLogged) {
+            if (isLogged && currentRole) {
                 gate.classList.add('hidden');
                 workspace.classList.remove('hidden');
                 workspace.classList.add('flex');
+                
+                // Adjust workspace depending on access permissions
+                configureWorkspaceByRole();
                 initializeData();
             } else {
                 gate.classList.remove('hidden');
@@ -835,8 +976,73 @@ function doPost(e) {
             }
         }
 
-        // Login Submission Event
-        function handleLoginSubmit(event) {
+        // Configure visual layouts and restrictions based on ADM / Accounting role
+        function configureWorkspaceByRole() {
+            const roleBadge = document.getElementById('badge-user-role');
+            const headerAddBtn = document.getElementById('header-add-client-btn');
+            const navContainer = document.getElementById('tabs-navigation-container');
+            const filterSec = document.getElementById('universal-filters');
+            const adminAccBtn = document.getElementById('admin-manage-acc-btn');
+            const drawerFooter = document.getElementById('drawer-footer');
+            const kpiSec = document.getElementById('kpi-section');
+            const syncIndicator = document.getElementById('sync-indicator');
+            const actionButtons = document.getElementById('universal-header-actions');
+
+            if (currentRole === 'admin') {
+                roleBadge.textContent = "ADM (GERAL)";
+                roleBadge.className = "text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20 uppercase";
+                
+                headerAddBtn.style.display = "flex";
+                navContainer.style.display = "flex";
+                filterSec.style.display = "block";
+                adminAccBtn.style.display = "flex";
+                drawerFooter.style.display = "flex";
+                kpiSec.style.display = "grid";
+                syncIndicator.style.display = "flex";
+                actionButtons.style.display = "flex";
+
+                switchTab('overviewTab');
+            } else if (currentRole === 'accounting') {
+                roleBadge.textContent = "Portal Contábil";
+                roleBadge.className = "text-[10px] bg-purple-500/10 text-purple-500 dark:text-purple-400 px-2 py-0.5 rounded-full font-medium border border-purple-500/20 uppercase";
+                
+                headerAddBtn.style.display = "none";
+                navContainer.style.display = "none";
+                filterSec.style.display = "none";
+                adminAccBtn.style.display = "none";
+                drawerFooter.style.display = "none";
+                kpiSec.style.display = "none";
+                syncIndicator.style.display = "none";
+                actionButtons.style.display = "none";
+
+                // Force access only to accounting tab
+                switchTab('accountingTab');
+            }
+        }
+
+        // Login Tabs management
+        function switchLoginTab(tab) {
+            currentLoginTab = tab;
+            const tabAdm = document.getElementById('tab-login-adm');
+            const tabAcc = document.getElementById('tab-login-accounting');
+            const formAdm = document.getElementById('form-login-adm-wrapper');
+            const formAcc = document.getElementById('form-login-accounting-wrapper');
+
+            if (tab === 'adm') {
+                tabAdm.className = "flex-1 pb-3 text-center border-b-2 border-emerald-500 text-emerald-500 transition-all";
+                tabAcc.className = "flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all";
+                formAdm.classList.remove('hidden');
+                formAcc.classList.add('hidden');
+            } else {
+                tabAcc.className = "flex-1 pb-3 text-center border-b-2 border-purple-500 text-purple-500 transition-all";
+                tabAdm.className = "flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all";
+                formAcc.classList.remove('hidden');
+                formAdm.classList.add('hidden');
+            }
+        }
+
+        // ADM Form login submission
+        function handleAdminLoginSubmit(event) {
             event.preventDefault();
             const user = document.getElementById('login-user').value.trim();
             const pass = document.getElementById('login-pass').value;
@@ -844,6 +1050,7 @@ function doPost(e) {
 
             if (user === 'CPUSIS' && pass === '1qaz2wsx') {
                 sessionStorage.setItem('gestasheet_logged', 'true');
+                sessionStorage.setItem('gestasheet_role', 'admin');
                 alertBox.classList.add('hidden');
                 checkSessionGate();
             } else {
@@ -852,9 +1059,19 @@ function doPost(e) {
             }
         }
 
+        // Accounting entry submission
+        function handleAccountingLoginSubmit() {
+            sessionStorage.setItem('gestasheet_logged', 'true');
+            sessionStorage.setItem('gestasheet_role', 'accounting');
+            checkSessionGate();
+        }
+
         // Logout Session Handler
         function handleLogout() {
             sessionStorage.removeItem('gestasheet_logged');
+            sessionStorage.removeItem('gestasheet_role');
+            unlockedAccountings = [];
+            selectedAccounting = null;
             checkSessionGate();
         }
 
@@ -893,6 +1110,15 @@ function doPost(e) {
         async function initializeData() {
             const localData = localStorage.getItem('gestasheet_client_db');
             const localUrl = localStorage.getItem('gestasheet_api_url');
+            const localProfiles = localStorage.getItem('gestasheet_accounting_profiles');
+
+            // Set dynamic selector options for accountings
+            if (localProfiles) {
+                accountingProfiles = JSON.parse(localProfiles);
+            } else {
+                accountingProfiles = [...DEFAULT_ACCOUNTINGS];
+                localStorage.setItem('gestasheet_accounting_profiles', JSON.stringify(accountingProfiles));
+            }
 
             if (localUrl) {
                 document.getElementById('sheets-url-input').value = localUrl;
@@ -906,7 +1132,7 @@ function doPost(e) {
             }
 
             // Detect remote sheet sync status and pull
-            if (localUrl) {
+            if (localUrl && currentRole === 'admin') {
                 await fetchRemoteData(localUrl);
             } else {
                 renderAll();
@@ -916,10 +1142,12 @@ function doPost(e) {
         // Render UI panels based on current active tab
         function renderAll() {
             populateFilterOptions();
+            populateFormOptions();
             applyFilters();
             calculateKPIs();
             renderAnalytics();
             renderAccountingTab();
+            renderAccountingPasswordsList();
         }
 
         // Switch App Layout Tabs
@@ -927,12 +1155,14 @@ function doPost(e) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
 
-            document.querySelectorAll('[id^="btn-"]').forEach(btn => {
-                btn.className = "flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200";
+            document.querySelectorAll('.tab-nav-btn').forEach(btn => {
+                btn.className = "tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200";
             });
 
             const activeBtn = document.getElementById(`btn-${tabId}`);
-            activeBtn.className = "flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto bg-emerald-600 text-white shadow-sm";
+            if (activeBtn) {
+                activeBtn.className = "tab-nav-btn flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto bg-emerald-600 text-white shadow-sm";
+            }
         }
 
         // Format raw number to real currency standard BRL
@@ -995,6 +1225,22 @@ function doPost(e) {
             regimeSelect.value = prevRegime || "ALL";
             systemSelect.value = prevSystem || "ALL";
             accountingSelect.value = prevAccounting || "ALL";
+        }
+
+        // Populate Form accounting choices based on dynamically registered Accounting profiles
+        function populateFormOptions() {
+            const addSelect = document.getElementById('add-contabilidade');
+            const editSelect = document.getElementById('edit-contabilidade');
+
+            addSelect.innerHTML = '';
+            editSelect.innerHTML = '';
+
+            accountingProfiles.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
+                const optAdd = `<option value="${p.name}">${p.name}</option>`;
+                const optEdit = `<option value="${p.name}">${p.name}</option>`;
+                addSelect.innerHTML += optAdd;
+                editSelect.innerHTML += optEdit;
+            });
         }
 
         // Calculate Strategic KPI Cards
@@ -1162,7 +1408,7 @@ function doPost(e) {
             const listContainer = document.getElementById('accounting-list-container');
             listContainer.innerHTML = '';
 
-            // Group clients and folder structure by accounting company
+            // Group clients by accounting company
             const accountingGroups = {};
             clients.forEach(c => {
                 const ac = c.contabilidade || "Não Atribuída";
@@ -1172,8 +1418,8 @@ function doPost(e) {
                 accountingGroups[ac].push(c);
             });
 
-            // Get unique accountings list
-            const uniqueOffices = Object.keys(accountingGroups).sort();
+            // Populate profiles sidebar
+            const uniqueOffices = accountingProfiles.map(p => p.name).sort();
 
             if (uniqueOffices.length === 0) {
                 listContainer.innerHTML = '<p class="text-xs text-slate-400">Nenhum escritório registrado.</p>';
@@ -1181,9 +1427,10 @@ function doPost(e) {
             }
 
             uniqueOffices.forEach(office => {
-                const clientList = accountingGroups[office];
+                const clientList = accountingGroups[office] || [];
                 const activeCount = clientList.filter(c => c.situacao === 'ATIVO').length;
                 const isSelected = selectedAccounting === office;
+                const isUnlocked = currentRole === 'admin' || unlockedAccountings.includes(office);
 
                 const btn = document.createElement('button');
                 btn.onclick = () => selectAccountingOffice(office);
@@ -1195,9 +1442,9 @@ function doPost(e) {
 
                 btn.innerHTML = `
                     <div class="flex items-center space-x-2.5">
-                        <i class="ph ph-buildings text-lg"></i>
+                        <i class="ph ${isUnlocked ? 'ph-buildings text-purple-500' : 'ph-lock-key text-slate-400'} text-lg"></i>
                         <div>
-                            <p class="text-xs truncate max-w-[150px]">${office}</p>
+                            <p class="text-xs truncate max-w-[150px] font-semibold">${office}</p>
                             <p class="text-[10px] text-slate-400 font-normal">${clientList.length} Registros</p>
                         </div>
                     </div>
@@ -1207,16 +1454,76 @@ function doPost(e) {
                 listContainer.appendChild(btn);
             });
 
-            // If an office is already selected, refresh its clients grid
+            // If an office is already selected and unlocked, refresh its clients grid
             if (selectedAccounting) {
-                renderAccountingClients(selectedAccounting, accountingGroups[selectedAccounting] || []);
+                const isUnlocked = currentRole === 'admin' || unlockedAccountings.includes(selectedAccounting);
+                if (isUnlocked) {
+                    renderAccountingClients(selectedAccounting, accountingGroups[selectedAccounting] || []);
+                } else {
+                    renderAccountingClientsLockedState();
+                }
             }
         }
 
-        // Selected Accounting dynamic change trigger
+        // Selected Accounting dynamic change trigger with password wall
         function selectAccountingOffice(officeName) {
             selectedAccounting = officeName;
-            renderAccountingTab();
+            
+            // Check if profile is already unlocked or if user is ADM (no passwords required for ADM)
+            const isUnlocked = currentRole === 'admin' || unlockedAccountings.includes(officeName);
+
+            if (isUnlocked) {
+                renderAccountingTab();
+            } else {
+                // Open password modal
+                accountingToUnlock = officeName;
+                document.getElementById('pwd-modal-acc-name').textContent = officeName;
+                document.getElementById('acc-password-input').value = '';
+                document.getElementById('acc-pwd-error').classList.add('hidden');
+                openModal('accountingPasswordModal');
+            }
+        }
+
+        // Submit and verify password for specific accounting profile
+        function submitAccountingPassword(event) {
+            event.preventDefault();
+            const enteredPwd = document.getElementById('acc-password-input').value;
+            const profile = accountingProfiles.find(p => p.name === accountingToUnlock);
+
+            if (profile && profile.password === enteredPwd) {
+                unlockedAccountings.push(accountingToUnlock);
+                closeModal('accountingPasswordModal');
+                showToast("Escritório desbloqueado com sucesso!");
+                renderAccountingTab();
+            } else {
+                document.getElementById('acc-pwd-error').classList.remove('hidden');
+                document.getElementById('acc-password-input').value = '';
+            }
+        }
+
+        function renderAccountingClientsLockedState() {
+            document.getElementById('selected-accounting-title').textContent = "Escritório Bloqueado";
+            document.getElementById('selected-accounting-count').textContent = "Insira a senha para carregar os clientes";
+            
+            const clientsContainer = document.getElementById('accounting-clients-container');
+            clientsContainer.innerHTML = `
+                <tr>
+                    <td colspan="4" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <i class="ph ph-lock-key text-4xl text-purple-500/55"></i>
+                            <p class="text-xs font-bold">Conteúdo Protegido por Senha</p>
+                            <p class="text-[10px] text-slate-500">Clique na contabilidade correspondente e insira a credencial.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Helper to check if string looks like a valid internet URL
+        function isURL(str) {
+            if (!str) return false;
+            const trimmed = str.trim();
+            return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('drive.google.com');
         }
 
         // Render clients subtable matching the chosen accounting firm
@@ -1240,6 +1547,8 @@ function doPost(e) {
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-100 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-900/10 transition-colors";
                 
+                const isLink = isURL(c.pasta);
+                
                 tr.innerHTML = `
                     <td class="py-3.5 pr-2 font-bold text-slate-800 dark:text-slate-200">
                         ${c.cliente}
@@ -1253,9 +1562,16 @@ function doPost(e) {
                         </code>
                     </td>
                     <td class="py-3.5 text-right">
-                        <button onclick="copyToClipboard('${c.pasta ? c.pasta.replace(/\\/g, '\\\\') : ''}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-500 rounded-lg transition-colors" title="Copiar Caminho">
-                            <i class="ph ph-copy text-base"></i>
-                        </button>
+                        ${isLink ? `
+                            <button onclick="window.open('${c.pasta}', '_blank')" class="p-1.5 hover:bg-emerald-500/10 text-emerald-500 rounded-lg transition-colors flex items-center justify-center gap-1 inline-flex" title="Abrir no Google Drive">
+                                <i class="ph ph-folder-open text-base font-bold"></i>
+                                <span class="text-[10px] font-bold hidden sm:inline">Drive</span>
+                            </button>
+                        ` : `
+                            <button onclick="copyToClipboard('${c.pasta ? c.pasta.replace(/\\/g, '\\\\') : ''}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-500 rounded-lg transition-colors inline-flex" title="Copiar Caminho de Rede Local">
+                                <i class="ph ph-copy text-base"></i>
+                            </button>
+                        `}
                     </td>
                 `;
                 clientsContainer.appendChild(tr);
@@ -1357,6 +1673,71 @@ function doPost(e) {
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
             document.getElementById(id).classList.remove('flex');
+        }
+
+        // Register new accounting company from Admin Management Modal
+        function submitNewAccounting(event) {
+            event.preventDefault();
+            const name = document.getElementById('new-acc-name').value.trim();
+            const password = document.getElementById('new-acc-password').value.trim();
+
+            if (accountingProfiles.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                showToast("Este escritório contábil já está cadastrado!", "danger");
+                return;
+            }
+
+            const newAcc = {
+                id: Date.now(),
+                name: name,
+                password: password
+            };
+
+            accountingProfiles.push(newAcc);
+            localStorage.setItem('gestasheet_accounting_profiles', JSON.stringify(accountingProfiles));
+            
+            document.getElementById('new-acc-name').value = '';
+            document.getElementById('new-acc-password').value = '';
+            
+            showToast("Novo escritório cadastrado com sucesso!");
+            renderAll();
+        }
+
+        // Render senhas e perfis de contabilidade cadastrados (ADM)
+        function renderAccountingPasswordsList() {
+            const tbody = document.getElementById('manage-acc-tbody');
+            tbody.innerHTML = '';
+
+            accountingProfiles.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-900/10";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold">${p.name}</td>
+                    <td class="p-3 font-mono text-emerald-500">${p.password}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteAccountingProfile(${p.id}, '${p.name}')" class="p-1 hover:bg-rose-500/10 text-rose-500 rounded transition-colors">
+                            <i class="ph ph-trash text-lg"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Delete Accounting profile and reset associated clients contabilidade to Outros
+        function deleteAccountingProfile(id, name) {
+            accountingProfiles = accountingProfiles.filter(p => p.id !== id);
+            localStorage.setItem('gestasheet_accounting_profiles', JSON.stringify(accountingProfiles));
+            
+            // Clean up clients holding this accounting reference
+            clients = clients.map(c => {
+                if (c.contabilidade === name) {
+                    return { ...c, contabilidade: "Outros" };
+                }
+                return c;
+            });
+            saveDataLocally();
+            renderAll();
+            showToast("Escritório contábil removido!", "danger");
         }
 
         // Add Client Submission
@@ -1475,6 +1856,8 @@ function doPost(e) {
             const box = document.getElementById('drawer-content-box');
             const isInactive = client.situacao === 'INATIVO';
 
+            const isLink = isURL(client.pasta);
+
             box.innerHTML = `
                 <!-- Profile Header -->
                 <div class="pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -1524,9 +1907,16 @@ function doPost(e) {
                     <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 font-mono">Pasta Organizadora</span>
                     <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
                         <code class="text-xs font-semibold text-slate-700 dark:text-slate-200 break-all select-all">${client.pasta || 'Sem pasta cadastrada'}</code>
-                        <button onclick="copyToClipboard('${client.pasta ? client.pasta.replace(/\\/g, '\\\\') : ''}')" class="text-slate-400 hover:text-emerald-500 transition-colors ml-2" title="Copiar Caminho">
-                            <i class="ph ph-copy text-base"></i>
-                        </button>
+                        
+                        ${isLink ? `
+                            <button onclick="window.open('${client.pasta}', '_blank')" class="text-emerald-500 hover:text-emerald-400 transition-colors ml-2" title="Abrir no Google Drive">
+                                <i class="ph ph-folder-open text-lg"></i>
+                            </button>
+                        ` : `
+                            <button onclick="copyToClipboard('${client.pasta ? client.pasta.replace(/\\/g, '\\\\') : ''}')" class="text-slate-400 hover:text-emerald-500 transition-colors ml-2" title="Copiar Caminho Local">
+                                <i class="ph ph-copy text-lg"></i>
+                            </button>
+                        `}
                     </div>
                 </div>
 
@@ -1646,6 +2036,7 @@ function doPost(e) {
         // Custom UI Sync feedback changer
         function updateSyncUI(loading, text, styleClasses, dotColor) {
             const indicator = document.getElementById('sync-indicator');
+            if (!indicator) return;
             const textEl = document.getElementById('sync-status-text');
             const syncIcon = document.getElementById('sync-spin-icon');
             const dot = indicator.querySelector('span');
