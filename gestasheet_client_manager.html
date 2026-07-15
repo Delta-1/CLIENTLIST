@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestaSheet - Controle de Carteira de Clientes</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Phosphor Icons for great visuals -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Custom scrollbar styled with Tailwind colors */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        /* Fluid transitions for theme switching */
+        .theme-transition {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans theme-transition min-h-screen flex flex-col">
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full"></div>
+
+    <!-- Header Panel -->
+    <header class="sticky top-0 z-30 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 theme-transition">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-xl text-white shadow-lg shadow-emerald-500/15">
+                    <i class="ph ph-database text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2">
+                        GestaSheet <span class="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20">INTEGRADO</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Controle Automático de Carteira</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Sync Badge (Hidden on mobile) -->
+                <div id="sync-indicator" class="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[11px] font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="sync-status-text">Memória Local (Offline)</span>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button onclick="toggleTheme()" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" title="Alternar Tema">
+                    <i id="theme-icon" class="ph ph-sun text-lg"></i>
+                </button>
+
+                <!-- New Client Action Button -->
+                <button onclick="openModal('addClientModal')" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-2 px-3 sm:px-4 rounded-xl flex items-center space-x-2 shadow-lg shadow-emerald-600/20 text-xs transition-all transform active:scale-95">
+                    <i class="ph ph-plus-circle text-lg"></i>
+                    <span class="hidden sm:inline">Adicionar Cliente</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        
+        <!-- KPIs Stat Cards Section -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Stats: Total Active MRR -->
+            <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Recorrência Mensal (MRR)</span>
+                    <span class="p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg"><i class="ph ph-currency-btc text-lg"></i></span>
+                </div>
+                <div>
+                    <h3 id="stat-mrr" class="text-base sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">R$ 0,00</h3>
+                    <p class="text-[9px] sm:text-[10px] text-emerald-500 flex items-center gap-1 mt-1 font-medium">
+                        <i class="ph ph-trend-up"></i> Faturamento ativo baseado na lista
+                    </p>
+                </div>
+            </div>
+
+            <!-- Stats: Active Clients -->
+            <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Clientes Ativos</span>
+                    <span class="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg"><i class="ph ph-check-circle text-lg"></i></span>
+                </div>
+                <div>
+                    <h3 id="stat-active" class="text-base sm:text-2xl font-bold tracking-tight">0</h3>
+                    <p class="text-[9px] sm:text-[10px] text-slate-400 mt-1 font-medium">Gerando faturamento recorrente</p>
+                </div>
+            </div>
+
+            <!-- Stats: Inactive Clients -->
+            <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Inativos</span>
+                    <span class="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg"><i class="ph ph-minus-circle text-lg"></i></span>
+                </div>
+                <div>
+                    <h3 id="stat-inactive" class="text-base sm:text-2xl font-bold tracking-tight">0</h3>
+                    <p class="text-[9px] sm:text-[10px] text-rose-500 dark:text-rose-400 mt-1 font-medium">Contas inativas ou suspensas</p>
+                </div>
+            </div>
+
+            <!-- Stats: Total Database -->
+            <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Integrado</span>
+                    <span class="p-1.5 bg-indigo-500/10 text-indigo-500 rounded-lg"><i class="ph ph-users text-lg"></i></span>
+                </div>
+                <div>
+                    <h3 id="stat-total" class="text-base sm:text-2xl font-bold tracking-tight">0</h3>
+                    <p class="text-[9px] sm:text-[10px] text-indigo-500 dark:text-indigo-400 mt-1 font-medium">Registros totais carregados</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Menu Tabs -->
+        <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-6">
+            <div class="flex p-1 rounded-xl bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 self-start w-full sm:w-auto overflow-x-auto">
+                <button onclick="switchTab('overviewTab')" id="btn-overviewTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto bg-emerald-600 text-white shadow-sm">
+                    <i class="ph ph-squares-four text-base"></i>
+                    <span>Visão Geral</span>
+                </button>
+                <button onclick="switchTab('tableTab')" id="btn-tableTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <i class="ph ph-table text-base"></i>
+                    <span>Planilha Completa</span>
+                </button>
+                <button onclick="switchTab('analyticsTab')" id="btn-analyticsTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <i class="ph ph-chart-line text-base"></i>
+                    <span>Indicadores</span>
+                </button>
+                <button onclick="switchTab('syncTab')" id="btn-syncTab" class="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
+                    <i class="ph ph-google-chrome-logo text-base"></i>
+                    <span>Conexão Sheets</span>
+                </button>
+            </div>
+
+            <!-- Universal Quick Actions -->
+            <div class="flex items-center gap-2">
+                <button onclick="exportToCSV()" class="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i class="ph ph-download-simple text-base"></i>
+                    <span>Exportar CSV</span>
+                </button>
+                <button onclick="forceSync()" id="btn-sync-top" class="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors">
+                    <i class="ph ph-arrow-counter-clockwise text-base" id="sync-spin-icon"></i>
+                    <span>Sincronizar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters Section (Only visible on Overview and Table views) -->
+        <div id="universal-filters" class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mb-6 transition-all">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Search text -->
+                <div class="relative">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Buscar cliente, sistema, cidade..." class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                </div>
+                <!-- Status filter -->
+                <div>
+                    <select id="filter-status" onchange="applyFilters()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        <option value="ALL">Todos os Status</option>
+                        <option value="ATIVO">Status: ATIVO</option>
+                        <option value="INATIVO">Status: INATIVO</option>
+                    </select>
+                </div>
+                <!-- Regime filter -->
+                <div>
+                    <select id="filter-regime" onchange="applyFilters()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        <option value="ALL">Todos os Regimes</option>
+                        <!-- Dynamic options loaded by JS -->
+                    </select>
+                </div>
+                <!-- System filter -->
+                <div>
+                    <select id="filter-system" onchange="applyFilters()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        <option value="ALL">Todos os Sistemas</option>
+                        <!-- Dynamic options loaded by JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB Content: OVERVIEW (Cards View) -->
+        <div id="view-overviewTab" class="tab-content transition-opacity duration-200">
+            <div id="cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamically populated client card listings -->
+            </div>
+            <!-- Empty State -->
+            <div id="overview-empty-state" class="hidden text-center py-16">
+                <div class="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 mb-4">
+                    <i class="ph ph-warning-circle text-4xl"></i>
+                </div>
+                <h3 class="text-sm font-bold">Nenhum cliente correspondente</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Experimente remover alguns filtros ou adicione um novo registro de cliente.</p>
+            </div>
+        </div>
+
+        <!-- TAB Content: COMPLETE PLANILHA (Table View) -->
+        <div id="view-tableTab" class="tab-content hidden transition-opacity duration-200">
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="sticky top-0 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider z-10">
+                                <th class="p-4">Cliente</th>
+                                <th class="p-4">Mensalidade</th>
+                                <th class="p-4">Regime Tributário</th>
+                                <th class="p-4">Sistema</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4">Contato</th>
+                                <th class="p-4">Cidade</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-rows-container" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
+                            <!-- Dynamically populated rows from JS state -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Table Empty State -->
+            <div id="table-empty-state" class="hidden text-center py-16">
+                <div class="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 mb-4">
+                    <i class="ph ph-warning-circle text-4xl"></i>
+                </div>
+                <h3 class="text-sm font-bold">Planilha de dados vazia</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Adicione novos clientes para ver a visualização consolidada.</p>
+            </div>
+        </div>
+
+        <!-- TAB Content: ANALYTICS INDICADORES (Dashboard Charts / Layout) -->
+        <div id="view-analyticsTab" class="tab-content hidden transition-opacity duration-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Most Popular Management Systems -->
+                <div class="md:col-span-2 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <h4 class="text-sm font-bold mb-6 flex items-center gap-2">
+                        <i class="ph ph-chart-bar text-emerald-500 text-lg"></i>
+                        Sistemas de ERP mais Utilizados na Carteira
+                    </h4>
+                    <div id="system-bars-container" class="space-y-4">
+                        <!-- Custom rendered bar charts built with Tailwind -->
+                    </div>
+                </div>
+
+                <!-- Strategic Summary Info Box -->
+                <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-sm font-bold mb-4 flex items-center gap-2">
+                            <i class="ph ph-shield-check text-emerald-500 text-lg"></i>
+                            Saúde Tributária & Emissão
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
+                            Indicadores gerais sobre os perfis dos clientes registrados para otimização de campanhas de migração ou oferta de serviços extras.
+                        </p>
+                        
+                        <div class="space-y-4 text-xs">
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/50">
+                                <span class="font-semibold text-slate-400">Emissores de NF-e</span>
+                                <span id="stat-emite" class="font-bold text-slate-700 dark:text-slate-200">0 Clientes</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/50">
+                                <span class="font-semibold text-slate-400">Simples Nacional</span>
+                                <span id="stat-simples" class="font-bold text-slate-700 dark:text-slate-200">0 Clientes</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/50">
+                                <span class="font-semibold text-slate-400">Lucro Presumido</span>
+                                <span id="stat-lucro" class="font-bold text-slate-700 dark:text-slate-200">0 Clientes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <p class="text-[10px] text-slate-400 leading-tight">As métricas de análise estratégica são consolidadas em tempo real baseado nas abas de cadastro.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB Content: SHEET CONECTOR SYNC (Google Apps Script Hub) -->
+        <div id="view-syncTab" class="tab-content hidden transition-opacity duration-200">
+            <div class="space-y-6">
+                <!-- Sync settings card -->
+                <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <h3 class="text-base font-bold mb-4 flex items-center gap-2">
+                        <i class="ph ph-database text-emerald-500"></i>
+                        Vincular Planilha Real do Google Sheets
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
+                        Com o GestaSheet, você pode ligar sua planilha real do Google diretamente a esta tela! Ao salvar novas entradas ou deletar clientes, os dados são sincronizados bidirecionalmente utilizando a API integrada por Google Apps Script.
+                    </p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">URL do Web App do Google Apps Script</label>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="url" id="sheets-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="flex-grow px-4 py-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                                <button onclick="saveSheetsConfig()" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-xs transition-all flex items-center justify-center space-x-2">
+                                    <i class="ph ph-floppy-disk text-base"></i>
+                                    <span>Salvar & Conectar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP BY STEP GUIDELINE -->
+                <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <h4 class="text-sm font-bold mb-4 flex items-center gap-2">
+                        <i class="ph ph-shield-check text-emerald-500 text-lg"></i>
+                        Como configurar sua planilha em 2 minutos (Passo a Passo)
+                    </h4>
+                    <ol class="list-decimal list-inside space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                        <li>Abra a sua planilha no <strong>Google Sheets</strong> (Aba ativa com nome <code class="bg-slate-100 dark:bg-slate-950 px-1 py-0.5 rounded text-rose-500">CLIENTES</code>).</li>
+                        <li>No menu superior, clique em <strong>Extensões</strong> &gt; <strong>Apps Script</strong>.</li>
+                        <li>Apague todo o código padrão e cole o script abaixo.</li>
+                        <li>Clique em <strong>Implantar</strong> (canto superior direito) &gt; <strong>Nova implantação</strong>.</li>
+                        <li>Selecione o tipo de implantação clicando no ícone de engrenagem e selecione <strong>App da Web</strong>.</li>
+                        <li>Em <code class="bg-slate-100 dark:bg-slate-950 px-1 py-0.5 rounded text-rose-500">Quem tem acesso</code>, marque <strong>Qualquer pessoa</strong>.</li>
+                        <li>Conclua a implantação, autorize as permissões de gravação do Google Sheets e copie o link gerado!</li>
+                    </ol>
+
+                    <!-- CODE EMBED CONTAINER -->
+                    <div class="relative">
+                        <button onclick="copyAppsScript()" class="absolute top-3 right-3 p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-300 transition-colors" title="Copiar código para área de transferência">
+                            <i class="ph ph-copy text-lg"></i>
+                        </button>
+                        <pre class="bg-slate-100 dark:bg-slate-950 text-[10px] text-emerald-700 dark:text-emerald-400 p-4 rounded-xl overflow-x-auto border border-slate-200 dark:border-slate-800 font-mono leading-relaxed" id="code-box">
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("CLIENTES");
+  if(!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", message: "Crie uma aba com o nome 'CLIENTES'"})).setMimeType(ContentService.MimeType.JSON);
+  }
+  var data = sheet.getDataRange().getValues();
+  var clients = [];
+  
+  for(var i = 1; i < data.length; i++) {
+    if(!data[i][0]) continue;
+    clients.push({
+      id: i,
+      cliente: data[i][0],
+      mensalidade: parseFloat(data[i][1]) || 0,
+      observacao: data[i][2] || "",
+      contato: data[i][3] || "",
+      cidade: data[i][4] || "",
+      situacao: data[i][5] || "ATIVO",
+      regime: data[i][6] || "",
+      emite: data[i][7] || "",
+      sistema: data[i][8] || "",
+      versao: data[i][9] || "",
+      pc: data[i][10] || "",
+      agendado: data[i][11] || ""
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify(clients))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("CLIENTES");
+    
+    if(payload.action === "syncAll") {
+      sheet.clearContents();
+      var headers = ["CLIENTES", "MENSALIDADE", "OBSERVAÇÃO", "CONTATO", "CIDADE", "SITUAÇÃO", "REGIME", "EMITE?", "SISTEMA", "VERSÃO", "PC", "AGENDADO"];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      
+      var rows = payload.clients.map(function(c) {
+        return [
+          c.cliente,
+          c.mensalidade,
+          c.observacao || "",
+          c.contato || "",
+          c.cidade || "",
+          c.situacao || "ATIVO",
+          c.regime || "",
+          c.emite || "",
+          c.sistema || "",
+          c.versao || "",
+          c.pc || "",
+          c.agendado || ""
+        ];
+      });
+      
+      if(rows.length > 0) {
+        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+      }
+      return ContentService.createTextOutput(JSON.stringify({status: "success"}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- DRAWER: Client Detail View Sidebar Drawer -->
+    <div id="clientDetailDrawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 overflow-hidden">
+            <!-- Background backdrop overlay -->
+            <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" onclick="closeDrawer()"></div>
+            
+            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                <div class="pointer-events-auto w-screen max-w-md">
+                    <div class="flex h-full flex-col justify-between border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-all">
+                        <div class="p-6 overflow-y-auto">
+                            <!-- Header actions -->
+                            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80 mb-6">
+                                <h3 class="font-bold text-base flex items-center gap-2">
+                                    <i class="ph ph-user text-emerald-500 text-lg"></i> Detalhes do Cliente
+                                </h3>
+                                <button onclick="closeDrawer()" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors">
+                                    <i class="ph ph-x text-lg"></i>
+                                </button>
+                            </div>
+
+                            <!-- Drawer fields -->
+                            <div class="space-y-6 text-xs" id="drawer-content-box">
+                                <!-- Populated by JS dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Footer bottom buttons inside drawer -->
+                        <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3">
+                            <button id="drawer-btn-edit" class="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2">
+                                <i class="ph ph-pencil-simple-line"></i> Editar Cadastro
+                            </button>
+                            <button id="drawer-btn-delete" class="px-4 py-2.5 rounded-xl border border-rose-500/20 hover:border-rose-500 hover:bg-rose-500/10 text-rose-500 transition-colors text-xs font-bold flex items-center justify-center">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Create Client Modal Form -->
+    <div id="addClientModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('addClientModal')"></div>
+        <div class="relative w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="ph ph-user-plus text-emerald-500"></i> Cadastrar Novo Cliente
+                </h3>
+                <button onclick="closeModal('addClientModal')" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            <form id="add-client-form" onsubmit="submitAddClient(event)" class="p-6 space-y-4 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="col-span-1 sm:col-span-2">
+                        <label class="block text-slate-400 font-semibold mb-1">Nome Fantasia / Cliente *</label>
+                        <input type="text" id="add-name" required placeholder="Ex: ABILIO RACOES E PETS" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Mensalidade (R$)</label>
+                        <input type="number" id="add-mensalidade" step="0.01" placeholder="Ex: 240.00" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Cidade</label>
+                        <input type="text" id="add-cidade" placeholder="Ex: EPITACIOLÂNDIA" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Contato Telefônico</label>
+                        <input type="text" id="add-contato" placeholder="Ex: 55 68 9989-3582" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Sistema Escolhido</label>
+                        <input type="text" id="add-sistema" placeholder="Ex: LC SISTEMAS" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Situação / Status</label>
+                        <select id="add-situacao" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                            <option value="ATIVO">ATIVO</option>
+                            <option value="INATIVO">INATIVO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Regime Tributário</label>
+                        <select id="add-regime" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                            <option value="SIMPLES NACIONAL">SIMPLES NACIONAL</option>
+                            <option value="LUCRO PRESUM">LUCRO PRESUMIDO</option>
+                            <option value="MEI">MEI</option>
+                            <option value="NÃO FISCAL">NÃO FISCAL</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Emite Notas Fiscais?</label>
+                        <select id="add-emite" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                            <option value="SIM">SIM</option>
+                            <option value="NÃO">NÃO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Versão Ativa</label>
+                        <input type="text" id="add-versao" placeholder="Ex: 3.20 KIT PI" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div class="col-span-1 sm:col-span-2">
+                        <label class="block text-slate-400 font-semibold mb-1">Observações Internas (Coluna 3)</label>
+                        <textarea id="add-observacao" rows="2" placeholder="Notas sobre parcelamentos ou particularidades..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('addClientModal')" class="px-4 py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl">Criar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit Client Modal Form -->
+    <div id="editClientModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('editClientModal')"></div>
+        <div class="relative w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    <i class="ph ph-pencil-simple-line text-emerald-500"></i> Editar Cadastro do Cliente
+                </h3>
+                <button onclick="closeModal('editClientModal')" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            <form id="edit-client-form" onsubmit="submitEditClient(event)" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="edit-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="col-span-1 sm:col-span-2">
+                        <label class="block text-slate-400 font-semibold mb-1">Nome Fantasia / Cliente *</label>
+                        <input type="text" id="edit-name" required class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Mensalidade (R$)</label>
+                        <input type="number" id="edit-mensalidade" step="0.01" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Cidade</label>
+                        <input type="text" id="edit-cidade" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Contato Telefônico</label>
+                        <input type="text" id="edit-contato" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Sistema Escolhido</label>
+                        <input type="text" id="edit-sistema" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Situação / Status</label>
+                        <select id="edit-situacao" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                            <option value="ATIVO">ATIVO</option>
+                            <option value="INATIVO">INATIVO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Regime Tributário</label>
+                        <select id="edit-regime" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                            <option value="SIMPLES NACIONAL">SIMPLES NACIONAL</option>
+                            <option value="LUCRO PRESUM">LUCRO PRESUMIDO</option>
+                            <option value="MEI">MEI</option>
+                            <option value="NÃO FISCAL">NÃO FISCAL</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Emite Notas Fiscais?</label>
+                        <select id="edit-emite" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                            <option value="SIM">SIM</option>
+                            <option value="NÃO">NÃO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Versão Ativa</label>
+                        <input type="text" id="edit-versao" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors">
+                    </div>
+                    <div class="col-span-1 sm:col-span-2">
+                        <label class="block text-slate-400 font-semibold mb-1">Observações Internas (Coluna 3)</label>
+                        <textarea id="edit-observacao" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('editClientModal')" class="px-4 py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Custom Delete Confirmation Modal (NO native alerts) -->
+    <div id="deleteConfirmModal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('deleteConfirmModal')"></div>
+        <div class="relative w-full max-w-sm rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+            <div class="flex items-center space-x-3 text-rose-500 mb-4">
+                <i class="ph ph-warning-circle text-3xl"></i>
+                <h3 class="font-bold text-sm">Remover Cliente</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
+                Tem certeza que deseja excluir permanentemente o cliente <strong id="delete-client-name" class="text-slate-800 dark:text-slate-200"></strong>? Essa ação recalculará o financeiro ativo imediatamente.
+            </p>
+            <div class="flex justify-end space-x-3 text-xs">
+                <button onclick="closeModal('deleteConfirmModal')" class="px-4 py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
+                <button id="btn-confirm-delete" class="bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-bold py-2.5 px-5 rounded-xl">Confirmar Exclusão</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Spreadsheet Data Loaded Directly
+        const DEFAULT_CLIENTS = [
+            { id: 1, cliente: "ABILIO (ABILIO RACOES E PETS )", mensalidade: 240.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", pc: "", agendado: "" },
+            { id: 2, cliente: "ABSON(MERCANTIL POPULAR )", mensalidade: 135.00, observacao: "", contato: "55 68 9257-4330", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", pc: "", agendado: "" },
+            { id: 3, cliente: "ADELMAR (PANIFICADORA FELIPE )", mensalidade: 160.00, observacao: "", contato: "55 68 9989-3582", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", pc: "", agendado: "" },
+            { id: 4, cliente: "ADRIANA (VIDRO INOX )", mensalidade: 145.00, observacao: "", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20", pc: "", agendado: "" },
+            { id: 5, cliente: "AIRO (AP PAGLIARINE )", mensalidade: 290.00, observacao: "OBS ESSE MES 1200,00", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "GESTORES", versao: "", pc: "", agendado: "" },
+            { id: 6, cliente: "AIRO (AGRO CHAMI MATRIZ )", mensalidade: 324.00, observacao: "PG OK", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "GESTORES", versao: "", pc: "", agendado: "" },
+            { id: 7, cliente: "ALEXSANDRO (RM FARMA MATRIZ )", mensalidade: 300.00, observacao: "", contato: "55 68 9989-5533", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", pc: "", agendado: "" },
+            { id: 8, cliente: "ALICIA (L A MOTO PEÇAS)", mensalidade: 135.00, observacao: "", contato: "55 68 9919-0945", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", pc: "", agendado: "" },
+            { id: 9, cliente: "ALINE (TOP CELL ACESSORIOS MATRIZ E FILIAL )", mensalidade: 320.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", pc: "", agendado: "" },
+            { id: 10, cliente: "ANA (DETALHES )", mensalidade: 0.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", pc: "", agendado: "" },
+            { id: 11, cliente: "ANA PAULA (MIMOS DE MADAME )", mensalidade: 180.00, observacao: "PG OK", contato: "", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "NAVI VENDAS", versao: "", pc: "", agendado: "" },
+            { id: 12, cliente: "ANNE (ARROBA AGROPECUARI  MATRIZ)", mensalidade: 560.00, observacao: "", contato: "", cidade: "XAPURI", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 KIT PI 08/05", pc: "", agendado: "" },
+            { id: 13, cliente: "BRUNA (WG MOTO PEÇAS )", mensalidade: 350.00, observacao: "PG OK", contato: "55 68 9981-2540", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", pc: "", agendado: "" },
+            { id: 14, cliente: "BRUNO (SANTA FE FILIAL E MATRIZ )", mensalidade: 1500.00, observacao: "PG OK", contato: "55 69 9319-3437", cidade: "BOCA DO ACRE/ AMAZONA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "AVANTE WEB", versao: "", pc: "", agendado: "" },
+            { id: 15, cliente: "CARLINHOS (CR GAS MATRIZ E FILIAL )", mensalidade: 135.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LINK PRO", versao: "", pc: "", agendado: "" },
+            { id: 16, cliente: "CASA DE CARNE CASTELO", mensalidade: 160.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "NÃO", sistema: "LINK PRO", versao: "", pc: "", agendado: "" },
+            { id: 17, cliente: "CELSO (STORE CELL)", mensalidade: 160.00, observacao: "", contato: "55 68 9936-3115", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "AVANTE WEB", versao: "", pc: "", agendado: "" },
+            { id: 18, cliente: "CEZAR (FC EMBALAGENS E SALGADINHOS l e ll)", mensalidade: 1620.00, observacao: "", contato: "55 68 9941-1973", cidade: "BRASILÉIA", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 KIT PI 08/05", pc: "", agendado: "" },
+            { id: 19, cliente: "CHARLYS (JB FERNANDEZ )", mensalidade: 160.00, observacao: "", contato: "", cidade: "PERU", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "NAVI VENDAS", versao: "", pc: "", agendado: "" },
+            { id: 20, cliente: "CIRILO (CIRILO MOVEIS E COLCHOES )", mensalidade: 200.00, observacao: "", contato: "", cidade: "EPITACIOLÂNDIA", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", pc: "", agendado: "" },
+            { id: 21, cliente: "E .S SANTOS  CONTABLIDADE", mensalidade: 0.00, observacao: "", contato: "", cidade: "", situacao: "INATIVO", regime: "", emite: "", sistema: "AVANTE WEB", versao: "", pc: "", agendado: "" },
+            { id: 22, cliente: "LIGIA (PETROPOLIS)", mensalidade: 2440.00, observacao: "PG OK", contato: "", cidade: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "", pc: "", agendado: "" },
+            { id: 23, cliente: "LURDMILA (RP MIX )", mensalidade: 100.00, observacao: "OK PG", contato: "", cidade: "", situacao: "ATIVO", regime: "MEI", emite: "NÃO", sistema: "LINK PRO", versao: "", pc: "", agendado: "" },
+            { id: 24, cliente: "MARCOS (RONDOFIL )", mensalidade: 0.00, observacao: "PG OK", contato: "", cidade: "", situacao: "ATIVO", regime: "LUCRO PRESUM", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.19 kit pi 30/05", pc: "12", agendado: "" },
+            { id: 25, cliente: "VALDENORA (COMERCIAL GABRIEL )", mensalidade: 300.00, observacao: "", contato: "", cidade: "", situacao: "ATIVO", regime: "SIMPLES NACIONAL", emite: "SIM", sistema: "LC SISTEMAS", versao: "3.20 kit pi REFORMA TRIBUTARIA", pc: "", agendado: "" }
+        ];
+
+        // App States
+        let clients = [];
+        let filteredClients = [];
+        let selectedClientId = null;
+        let isSheetsConnected = false;
+
+        // Initialize App on Window Load
+        window.onload = function() {
+            loadTheme();
+            initializeData();
+        }
+
+        // Theme management helper functions
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('gestasheet_theme') || 'dark';
+            const body = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            
+            if (savedTheme === 'dark') {
+                body.classList.add('dark');
+                icon.className = 'ph ph-sun text-lg';
+            } else {
+                body.classList.remove('dark');
+                icon.className = 'ph ph-moon text-lg';
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (body.classList.contains('dark')) {
+                body.classList.remove('dark');
+                icon.className = 'ph ph-moon text-lg';
+                localStorage.setItem('gestasheet_theme', 'light');
+                showToast("Tema claro ativo", "info");
+            } else {
+                body.classList.add('dark');
+                icon.className = 'ph ph-sun text-lg';
+                localStorage.setItem('gestasheet_theme', 'dark');
+                showToast("Tema escuro ativo", "info");
+            }
+        }
+
+        // Initialize State Data
+        async function initializeData() {
+            const localData = localStorage.getItem('gestasheet_client_db');
+            const localUrl = localStorage.getItem('gestasheet_api_url');
+
+            if (localUrl) {
+                document.getElementById('sheets-url-input').value = localUrl;
+            }
+
+            if (localData) {
+                clients = JSON.parse(localData);
+            } else {
+                clients = [...DEFAULT_CLIENTS];
+                localStorage.setItem('gestasheet_client_db', JSON.stringify(clients));
+            }
+
+            // Detect remote sheet sync status and pull
+            if (localUrl) {
+                await fetchRemoteData(localUrl);
+            } else {
+                renderAll();
+            }
+        }
+
+        // Render UI panels based on current active tab
+        function renderAll() {
+            populateFilterOptions();
+            applyFilters();
+            calculateKPIs();
+            renderAnalytics();
+        }
+
+        // Switch App Layout Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+                btn.className = "flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200";
+            });
+
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.className = "flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all w-full sm:w-auto bg-emerald-600 text-white shadow-sm";
+        }
+
+        // Format raw number to real currency standard BRL
+        function formatBRL(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value || 0);
+        }
+
+        // Populate Filter Selection Menus with unique values found inside database
+        function populateFilterOptions() {
+            const regimes = new Set();
+            const systems = new Set();
+
+            clients.forEach(c => {
+                if (c.regime) regimes.add(c.regime);
+                if (c.sistema) systems.add(c.sistema);
+            });
+
+            const regimeSelect = document.getElementById('filter-regime');
+            const systemSelect = document.getElementById('filter-system');
+
+            // Save previous values
+            const prevRegime = regimeSelect.value;
+            const prevSystem = systemSelect.value;
+
+            regimeSelect.innerHTML = '<option value="ALL">Todos os Regimes</option>';
+            systemSelect.innerHTML = '<option value="ALL">Todos os Sistemas</option>';
+
+            Array.from(regimes).sort().forEach(r => {
+                regimeSelect.innerHTML += `<option value="${r}">${r}</option>`;
+            });
+
+            Array.from(systems).sort().forEach(s => {
+                systemSelect.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+
+            regimeSelect.value = prevRegime || "ALL";
+            systemSelect.value = prevSystem || "ALL";
+        }
+
+        // Calculate Strategic KPI Cards
+        function calculateKPIs() {
+            const activeClients = clients.filter(c => c.situacao === 'ATIVO');
+            const totalMRR = activeClients.reduce((sum, current) => sum + (parseFloat(current.mensalidade) || 0), 0);
+
+            document.getElementById('stat-mrr').textContent = formatBRL(totalMRR);
+            document.getElementById('stat-active').textContent = activeClients.length;
+            document.getElementById('stat-inactive').textContent = clients.filter(c => c.situacao === 'INATIVO').length;
+            document.getElementById('stat-total').textContent = clients.length;
+
+            // Extra metrics for Analytics pane
+            const emitsCount = clients.filter(c => c.emite === 'SIM').length;
+            const simplesCount = clients.filter(c => c.regime === 'SIMPLES NACIONAL').length;
+            const lucroCount = clients.filter(c => c.regime === 'LUCRO PRESUM' || c.regime === 'LUCRO PRESUMIDO').length;
+
+            document.getElementById('stat-emite').textContent = `${emitsCount} Clientes`;
+            document.getElementById('stat-simples').textContent = `${simplesCount} Clientes`;
+            document.getElementById('stat-lucro').textContent = `${lucroCount} Clientes`;
+        }
+
+        // Apply filters to state client list
+        function applyFilters() {
+            const search = document.getElementById('filter-search').value.toLowerCase();
+            const status = document.getElementById('filter-status').value;
+            const regime = document.getElementById('filter-regime').value;
+            const system = document.getElementById('filter-system').value;
+
+            filteredClients = clients.filter(c => {
+                const matchSearch = !search || 
+                    c.cliente.toLowerCase().includes(search) || 
+                    (c.sistema && c.sistema.toLowerCase().includes(search)) ||
+                    (c.cidade && c.cidade.toLowerCase().includes(search));
+                
+                const matchStatus = status === 'ALL' || c.situacao === status;
+                const matchRegime = regime === 'ALL' || c.regime === regime;
+                const matchSystem = system === 'ALL' || c.sistema === system;
+
+                return matchSearch && matchStatus && matchRegime && matchSystem;
+            });
+
+            renderCards();
+            renderTable();
+        }
+
+        // Render card layout
+        function renderCards() {
+            const container = document.getElementById('cards-container');
+            const emptyState = document.getElementById('overview-empty-state');
+            container.innerHTML = '';
+
+            if (filteredClients.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filteredClients.forEach(c => {
+                const isInactive = c.situacao === 'INATIVO';
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border transition-all cursor-pointer hover:scale-[1.01] flex flex-col justify-between h-full ${
+                    isInactive 
+                        ? 'bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/60 opacity-60' 
+                        : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 border-slate-200 dark:border-slate-800'
+                }`;
+                card.onclick = () => openDrawer(c.id);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                isInactive 
+                                    ? 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400' 
+                                    : 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
+                            }">
+                                <span class="w-1.5 h-1.5 rounded-full ${isInactive ? 'bg-slate-400' : 'bg-emerald-500'}"></span>
+                                ${c.situacao}
+                            </span>
+                            <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">${formatBRL(c.mensalidade)}</span>
+                        </div>
+                        <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight mb-2">${c.cliente}</h4>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <i class="ph ph-laptop text-sm"></i>
+                            <span class="truncate">${c.sistema || 'Nenhum ERP'}</span>
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/80">
+                        ${c.regime ? `<span class="text-[9px] font-semibold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-950">${c.regime}</span>` : ''}
+                        ${c.cidade ? `<span class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 truncate max-w-[120px]">${c.cidade}</span>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Render table format layout
+        function renderTable() {
+            const container = document.getElementById('table-rows-container');
+            const emptyState = document.getElementById('table-empty-state');
+            container.innerHTML = '';
+
+            if (filteredClients.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filteredClients.forEach(c => {
+                const isInactive = c.situacao === 'INATIVO';
+                const tr = document.createElement('tr');
+                tr.className = `border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors ${isInactive ? 'opacity-60 bg-slate-50 dark:bg-slate-950/10' : ''}`;
+                
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[200px]" title="${c.cliente}">${c.cliente}</td>
+                    <td class="p-4 font-bold text-emerald-600 dark:text-emerald-400">${formatBRL(c.mensalidade)}</td>
+                    <td class="p-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-950">
+                            ${c.regime || 'NÃO CONFIG'}
+                        </span>
+                    </td>
+                    <td class="p-4 font-medium text-slate-600 dark:text-slate-300">${c.sistema || '-'}</td>
+                    <td class="p-4">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                            isInactive ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' : 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
+                        }">
+                            <span class="w-1.5 h-1.5 rounded-full ${isInactive ? 'bg-slate-400' : 'bg-emerald-500'}"></span>
+                            ${c.situacao}
+                        </span>
+                    </td>
+                    <td class="p-4 text-slate-500 dark:text-slate-400">${c.contato || '-'}</td>
+                    <td class="p-4 text-slate-500 dark:text-slate-400 truncate max-w-[120px]">${c.cidade || '-'}</td>
+                    <td class="p-4 text-right">
+                        <div class="flex items-center justify-end space-x-1.5">
+                            <button onclick="openDrawer(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 transition-colors" title="Ver Detalhes">
+                                <i class="ph ph-file-text text-lg"></i>
+                            </button>
+                            <button onclick="openEditModal(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-blue-500 hover:text-blue-600 transition-colors" title="Editar">
+                                <i class="ph ph-pencil-simple-line text-lg"></i>
+                            </button>
+                            <button onclick="triggerDelete(${c.id})" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-rose-500 hover:text-rose-600 transition-colors" title="Excluir">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                container.appendChild(tr);
+            });
+        }
+
+        // Render Analytics Visual bars
+        function renderAnalytics() {
+            const container = document.getElementById('system-bars-container');
+            container.innerHTML = '';
+
+            const systemDistribution = {};
+            clients.forEach(c => {
+                if (c.sistema) {
+                    systemDistribution[c.sistema] = (systemDistribution[c.sistema] || 0) + 1;
+                }
+            });
+
+            const sortedDistribution = Object.entries(systemDistribution)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5); // top 5 systems
+
+            if (sortedDistribution.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400">Nenhum dado cadastrado para consolidar indicadores.</p>';
+                return;
+            }
+
+            sortedDistribution.forEach(([name, count]) => {
+                const percentage = ((count / clients.length) * 100).toFixed(1);
+                container.innerHTML += `
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>${name}</span>
+                            <span class="text-slate-400">${count} Clientes (${percentage}%)</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-1000" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Toast alert utility (Replaces native alerts)
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === "success" 
+                ? "bg-emerald-500 text-white shadow-emerald-500/10" 
+                : type === "danger" 
+                    ? "bg-rose-500 text-white shadow-rose-500/10" 
+                    : "bg-slate-800 text-slate-100 shadow-slate-900/10";
+
+            toast.className = `flex items-center justify-between p-4 rounded-xl shadow-lg border border-transparent text-xs font-bold transition-all transform translate-y-2 opacity-0 duration-300 ${bgClass}`;
+            
+            toast.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="ph ${type === 'success' ? 'ph-check-circle' : 'ph-info'} text-lg"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white transition-colors">
+                    <i class="ph ph-x text-sm"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Modal utility handlers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('flex');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+        }
+
+        // Add Client Submission
+        function submitAddClient(event) {
+            event.preventDefault();
+            const newClient = {
+                id: Date.now(),
+                cliente: document.getElementById('add-name').value,
+                mensalidade: parseFloat(document.getElementById('add-mensalidade').value) || 0,
+                observacao: document.getElementById('add-observacao').value,
+                contato: document.getElementById('add-contato').value,
+                cidade: document.getElementById('add-cidade').value,
+                situacao: document.getElementById('add-situacao').value,
+                regime: document.getElementById('add-regime').value,
+                emite: document.getElementById('add-emite').value,
+                sistema: document.getElementById('add-sistema').value,
+                versao: document.getElementById('add-versao').value,
+                pc: "",
+                agendado: ""
+            };
+
+            clients.unshift(newClient);
+            saveDataLocally();
+            closeModal('addClientModal');
+            document.getElementById('add-client-form').reset();
+            showToast("Cliente adicionado com sucesso!");
+            
+            // Sync up to sheets if integrated
+            triggerAutoSheetsSync();
+        }
+
+        // Edit Modal Trigger Setup
+        function openEditModal(id) {
+            const client = clients.find(c => c.id === id);
+            if (!client) return;
+
+            document.getElementById('edit-id').value = client.id;
+            document.getElementById('edit-name').value = client.cliente;
+            document.getElementById('edit-mensalidade').value = client.mensalidade;
+            document.getElementById('edit-cidade').value = client.cidade;
+            document.getElementById('edit-contato').value = client.contato;
+            document.getElementById('edit-sistema').value = client.sistema;
+            document.getElementById('edit-situacao').value = client.situacao;
+            document.getElementById('edit-regime').value = client.regime;
+            document.getElementById('edit-emite').value = client.emite;
+            document.getElementById('edit-versao').value = client.versao;
+            document.getElementById('edit-observacao').value = client.observacao;
+
+            openModal('editClientModal');
+        }
+
+        // Submit Edit Handler
+        function submitEditClient(event) {
+            event.preventDefault();
+            const id = parseInt(document.getElementById('edit-id').value);
+            const index = clients.findIndex(c => c.id === id);
+
+            if (index !== -1) {
+                clients[index] = {
+                    ...clients[index],
+                    cliente: document.getElementById('edit-name').value,
+                    mensalidade: parseFloat(document.getElementById('edit-mensalidade').value) || 0,
+                    cidade: document.getElementById('edit-cidade').value,
+                    contato: document.getElementById('edit-contato').value,
+                    sistema: document.getElementById('edit-sistema').value,
+                    situacao: document.getElementById('edit-situacao').value,
+                    regime: document.getElementById('edit-regime').value,
+                    emite: document.getElementById('edit-emite').value,
+                    versao: document.getElementById('edit-versao').value,
+                    observacao: document.getElementById('edit-observacao').value
+                };
+
+                saveDataLocally();
+                closeModal('editClientModal');
+                showToast("Cadastro atualizado!");
+                triggerAutoSheetsSync();
+                closeDrawer();
+            }
+        }
+
+        // Delete Trigger Action Setup
+        function triggerDelete(id) {
+            const client = clients.find(c => c.id === id);
+            if (!client) return;
+
+            document.getElementById('delete-client-name').textContent = client.cliente;
+            document.getElementById('btn-confirm-delete').onclick = () => {
+                clients = clients.filter(c => c.id !== id);
+                saveDataLocally();
+                closeModal('deleteConfirmModal');
+                showToast("Cliente removido com sucesso!", "danger");
+                triggerAutoSheetsSync();
+                closeDrawer();
+            };
+            openModal('deleteConfirmModal');
+        }
+
+        // Save local state helper
+        function saveDataLocally() {
+            localStorage.setItem('gestasheet_client_db', JSON.stringify(clients));
+            renderAll();
+        }
+
+        // Open detailed drawer sidebar
+        function openDrawer(id) {
+            const client = clients.find(c => c.id === id);
+            if (!client) return;
+
+            const box = document.getElementById('drawer-content-box');
+            const isInactive = client.situacao === 'INATIVO';
+
+            box.innerHTML = `
+                <!-- Profile Header -->
+                <div class="pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        isInactive ? 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400' : 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
+                    }">
+                        <span class="w-1.5 h-1.5 rounded-full ${isInactive ? 'bg-slate-400' : 'bg-emerald-500'}"></span>
+                        ${client.situacao}
+                    </span>
+                    <h4 class="text-sm font-extrabold text-slate-900 dark:text-white leading-tight mt-2">${client.cliente}</h4>
+                </div>
+
+                <!-- Fields grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Mensalidade</span>
+                        <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">${formatBRL(client.mensalidade)}</p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Regime Fiscal</span>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">${client.regime || '-'}</p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Emite Notas</span>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">${client.emite || 'NÃO'}</p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Sistema (ERP)</span>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">${client.sistema || '-'}</p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Versão do Software</span>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">${client.versao || '-'}</p>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Cidade</span>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                            <i class="ph ph-map-pin"></i> ${client.cidade || '-'}
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Contato Telefônico</span>
+                    <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                        <i class="ph ph-phone text-slate-400"></i> ${client.contato || 'Sem telefone registrado'}
+                    </p>
+                </div>
+
+                ${client.observacao ? `
+                <div class="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-amber-800 dark:text-amber-300">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider mb-1">Observações Internas</span>
+                    <p class="leading-relaxed text-slate-600 dark:text-slate-300 text-[11px] font-medium">${client.observacao}</p>
+                </div>` : ''}
+            `;
+
+            // Map action handlers to action buttons in drawer
+            document.getElementById('drawer-btn-edit').onclick = () => openEditModal(client.id);
+            document.getElementById('drawer-btn-delete').onclick = () => triggerDelete(client.id);
+
+            document.getElementById('clientDetailDrawer').classList.remove('hidden');
+        }
+
+        function closeDrawer() {
+            document.getElementById('clientDetailDrawer').classList.add('hidden');
+        }
+
+        // Google Sheets Integration Controllers
+        function saveSheetsConfig() {
+            const urlInput = document.getElementById('sheets-url-input').value.trim();
+            if (urlInput) {
+                localStorage.setItem('gestasheet_api_url', urlInput);
+                showToast("URL da planilha configurada!");
+                fetchRemoteData(urlInput);
+            } else {
+                localStorage.removeItem('gestasheet_api_url');
+                isSheetsConnected = false;
+                updateSyncUI(false, "Memória Local (Offline)");
+                showToast("Focando no banco de dados local.", "info");
+            }
+        }
+
+        // Async read remote database
+        async function fetchRemoteData(url) {
+            updateSyncUI(true, "Lendo planilha remota...");
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Erro na conexão");
+                const remoteClients = await response.json();
+                
+                if (Array.isArray(remoteClients)) {
+                    clients = remoteClients;
+                    localStorage.setItem('gestasheet_client_db', JSON.stringify(clients));
+                    isSheetsConnected = true;
+                    updateSyncUI(false, "Sincronizado com Google Sheets", "bg-emerald-500 border-emerald-500/30 text-emerald-500", "bg-emerald-500");
+                    showToast("Planilha remota importada com sucesso!");
+                    renderAll();
+                } else {
+                    throw new Error("Formato inválido retornado");
+                }
+            } catch (err) {
+                isSheetsConnected = false;
+                updateSyncUI(false, "Erro ao Sincronizar", "bg-rose-500 border-rose-500/30 text-rose-500", "bg-rose-500");
+                showToast("Erro ao conectar na planilha Google.", "danger");
+                console.error(err);
+                // Failback to local
+                renderAll();
+            }
+        }
+
+        // Manual pull trigger from synchronization button
+        async function forceSync() {
+            const localUrl = localStorage.getItem('gestasheet_api_url');
+            if (!localUrl) {
+                showToast("Nenhum URL do Google Sheets salvo na aba Conexão.", "info");
+                return;
+            }
+            await fetchRemoteData(localUrl);
+        }
+
+        // Remote push synchronization routine
+        async function triggerAutoSheetsSync() {
+            const localUrl = localStorage.getItem('gestasheet_api_url');
+            if (!localUrl) return;
+
+            updateSyncUI(true, "Escrevendo na planilha...");
+            try {
+                const response = await fetch(localUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // standard cross-origin security bypass for Apps Script webapp
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'syncAll',
+                        clients: clients
+                    })
+                });
+                
+                // Since 'no-cors' mode results in opaque responses, assume success on resolution
+                showToast("Planilha atualizada!");
+                updateSyncUI(false, "Sincronizado com Google Sheets", "bg-emerald-500 border-emerald-500/30 text-emerald-500", "bg-emerald-500");
+            } catch (err) {
+                updateSyncUI(false, "Erro ao enviar", "bg-rose-500 border-rose-500/30 text-rose-500", "bg-rose-500");
+                showToast("Houve um problema de envio remoto.", "danger");
+                console.error(err);
+            }
+        }
+
+        // Custom UI Sync feedback changer
+        function updateSyncUI(loading, text, styleClasses, dotColor) {
+            const indicator = document.getElementById('sync-indicator');
+            const textEl = document.getElementById('sync-status-text');
+            const syncIcon = document.getElementById('sync-spin-icon');
+            const dot = indicator.querySelector('span');
+
+            if (loading) {
+                syncIcon.classList.add('animate-spin');
+                textEl.textContent = text;
+                dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
+                indicator.className = "hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[11px] font-semibold";
+                return;
+            }
+
+            syncIcon.classList.remove('animate-spin');
+            textEl.textContent = text;
+
+            if (styleClasses) {
+                indicator.className = `hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold ${styleClasses}`;
+                dot.className = `w-1.5 h-1.5 rounded-full ${dotColor}`;
+            } else {
+                indicator.className = "hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[11px] font-semibold";
+                dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
+            }
+        }
+
+        // Local copy button script
+        function copyAppsScript() {
+            const pre = document.getElementById('code-box');
+            
+            // Clipboard emulation for restricted frame environments
+            const textArea = document.createElement("textarea");
+            textArea.value = pre.innerText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            showToast("Código copiado para área de transferência!");
+        }
+
+        // CSV Export Tool
+        function exportToCSV() {
+            const headers = ["CLIENTES", "MENSALIDADE", "OBSERVAÇÃO", "CONTATO", "CIDADE", "SITUAÇÃO", "REGIME", "EMITE?", "SISTEMA", "VERSÃO", "PC", "AGENDADO"];
+            const rows = clients.map(c => [
+                c.cliente,
+                c.mensalidade,
+                c.observacao || "",
+                c.contato || "",
+                c.cidade || "",
+                c.situacao || "ATIVO",
+                c.regime || "",
+                c.emite || "SIM",
+                c.sistema || "",
+                c.versao || "",
+                c.pc || "",
+                c.agendado || ""
+            ]);
+
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                + [headers.join(";"), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";"))].join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Clientes_GestaSheet_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Backup CSV exportado.");
+        }
+    </script>
+</body>
+</html>
